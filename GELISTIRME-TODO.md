@@ -14,7 +14,7 @@ Her dilim bitmeden sonrakine geçilmez. Kabul: ilgili API + web ekranı + sunucu
 | T-01 | Sunucu SSH + Docker lab (Caddy, `lab_edge`) | **bitti** | `194.62.55.69`: `lab-caddy`, API/Postgres sağlıklı; `/lab/health` → `ok` |
 | T-02 | Sunucu `origin` URL + GitHub’a ağ | **bitti** | `/opt/lab/apps/arsiv` remote `https://github.com/mesutozyurt/arsiv.git` |
 | T-03 | Sunucu çalışma kopyası = `origin/main` | **bitti** | `deploy.sh` sonrası HEAD `ebe6ee9` (Dilim 1 deploy’u bunu günceller) |
-| T-04 | `arsiv-web` sağlık kontrolü | **açık** | `/health` Dilim 1 ile ekleniyor; eski imajda 404 |
+| T-04 | `arsiv-web` sağlık kontrolü | **bitti** | `HOSTNAME=0.0.0.0`; `/health` → `ok`; konteyner `healthy` |
 | T-05 | GitHub Classic PAT’i sohbet sonrası iptal / yenile | **açık** | Token sohbette göründü |
 | T-06 | Alt alan + HTTPS (Caddy) | **sonra** | Alan adı yok; şimdilik IP / sslip.io |
 
