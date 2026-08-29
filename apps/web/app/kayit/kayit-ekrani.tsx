@@ -249,38 +249,34 @@ export function KayitEkrani() {
   const seriler = agac?.fonlar.flatMap((f) => f.seriler) ?? [];
 
   return (
-    <main style={{ maxWidth: "72rem", margin: "0 auto", padding: "1.5rem" }}>
-      <p>
-        <a href="/">← Ana sayfa</a>
-      </p>
-      <h1 style={{ fontSize: "1.4rem" }}>Tasnif ve konum</h1>
-      <p style={{ color: "#444" }}>
-        Dosya ancak benzersiz kod, asıl/kopya, üretici/sahip ve fiziksel konum
-        ile tamamlanır.
-      </p>
+    <main className="kabuk">
+      <header className="sayfa-baslik">
+        <h1>Tasnif ve konum</h1>
+        <p>
+          Dosya ancak benzersiz kod, asıl/kopya, üretici/sahip ve fiziksel konum
+          ile tamamlanır.
+        </p>
+      </header>
       {hata ? (
-        <p role="alert" style={{ color: "#8a1f1f" }}>
+        <p className="uyari" role="alert">
           {hata}
         </p>
       ) : null}
-      {bilgi ? <p role="status">{bilgi}</p> : null}
+      {bilgi ? (
+        <p className="bilgi" role="status">
+          {bilgi}
+        </p>
+      ) : null}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(16rem, 1fr) minmax(22rem, 1.4fr)",
-          gap: "1.5rem",
-          alignItems: "start",
-        }}
-      >
-        <section>
-          <h2 style={{ fontSize: "1.05rem" }}>Hiyerarşi</h2>
+      <div className="grid-2">
+        <section className="kart">
+          <h2>Hiyerarşi</h2>
           {!agac ? (
-            <p>Yükleniyor…</p>
+            <p className="yukleniyor">Yükleniyor…</p>
           ) : (
-            <ul style={{ listStyle: "none", padding: 0 }}>
+            <ul className="agac">
               {agac.fonlar.map((fon) => (
-                <li key={fon.id} style={{ marginBottom: "0.8rem" }}>
+                <li key={fon.id}>
                   <strong>
                     {fon.kod} — {fon.ad}
                   </strong>
@@ -292,19 +288,14 @@ export function KayitEkrani() {
                           {seri.dosyalar.map((dosya) => (
                             <li key={dosya.id}>
                               <button
+                                className={`agac-dugme${dosya.id === seciliId ? " secili" : ""}`}
                                 type="button"
                                 onClick={() => void dosyaSec(dosya.id)}
-                                style={{
-                                  background: "none",
-                                  border: "none",
-                                  padding: 0,
-                                  color: dosya.id === seciliId ? "#000" : "#0b4f8a",
-                                  fontWeight: dosya.id === seciliId ? 700 : 400,
-                                  cursor: "pointer",
-                                  textAlign: "left",
-                                }}
                               >
-                                {dosya.kod} [{dosya.durum}]
+                                {dosya.kod}{" "}
+                                <span className={`rozet ${dosya.durum === "KAYITLI" ? "rozet-kayitli" : "rozet-taslak"}`}>
+                                  {dosya.durum}
+                                </span>
                               </button>
                             </li>
                           ))}
@@ -317,19 +308,19 @@ export function KayitEkrani() {
             </ul>
           )}
 
-          <h2 style={{ fontSize: "1.05rem" }}>Yeni dosya</h2>
-          <form onSubmit={(e) => void dosyaOlustur(e)} style={{ display: "grid", gap: "0.45rem" }}>
+          <h2>Yeni dosya</h2>
+          <form className="form-izgara" onSubmit={(e) => void dosyaOlustur(e)}>
             <label>
               Kimlik
-              <input name="kod" required minLength={3} style={{ width: "100%" }} />
+              <input name="kod" required minLength={3} />
             </label>
             <label>
               Konu
-              <input name="konu" required minLength={3} style={{ width: "100%" }} />
+              <input name="konu" required minLength={3} />
             </label>
             <label>
               Seri
-              <select name="seriId" required style={{ width: "100%" }}>
+              <select name="seriId" required>
                 {seriler.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.kod} — {s.ad}
@@ -339,7 +330,7 @@ export function KayitEkrani() {
             </label>
             <label>
               Birim
-              <select name="birimId" required style={{ width: "100%" }}>
+              <select name="birimId" required>
                 {agac?.birimler.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.kod} — {b.ad}
@@ -357,15 +348,15 @@ export function KayitEkrani() {
             </label>
             <label>
               Üretici birim
-              <input name="ureticiBirimAd" required defaultValue="Yazı İşleri Müdürlüğü" style={{ width: "100%" }} />
+              <input name="ureticiBirimAd" required defaultValue="Yazı İşleri Müdürlüğü" />
             </label>
             <label>
               Sahip kurum
-              <input name="sahipKurum" required defaultValue="Test İlçe Belediyesi" style={{ width: "100%" }} />
+              <input name="sahipKurum" required defaultValue="Test İlçe Belediyesi" />
             </label>
             <label>
               Konum (isteğe bağlı; tamamlamak için gerekir)
-              <select name="konumId" style={{ width: "100%" }}>
+              <select name="konumId">
                 <option value="">— yok —</option>
                 {agac?.konumlar.map((k) => (
                   <option key={k.id} value={k.id}>
@@ -374,12 +365,14 @@ export function KayitEkrani() {
                 ))}
               </select>
             </label>
-            <button type="submit">Taslak oluştur</button>
+            <button className="dugme-ana" type="submit">
+              Taslak oluştur
+            </button>
           </form>
         </section>
 
-        <section>
-          <h2 style={{ fontSize: "1.05rem" }}>Dosya</h2>
+        <section className="kart">
+          <h2>Dosya</h2>
           {!detay ? (
             <p>Dosya seçin.</p>
           ) : (
@@ -387,13 +380,16 @@ export function KayitEkrani() {
               <p>
                 <strong>{detay.kod}</strong> — {detay.konu}
               </p>
-              <p>
-                Durum: <strong>{detay.durum}</strong> · Nüsha: {detay.nushaTuru}
+              <p className="meta">
+                <span className={`rozet ${detay.durum === "KAYITLI" ? "rozet-kayitli" : "rozet-taslak"}`}>
+                  {detay.durum}
+                </span>{" "}
+                · Nüsha: {detay.nushaTuru}
               </p>
-              <p>
+              <p className="meta">
                 Fon {detay.seri.fon.kod} → seri {detay.seri.kod} → birim {detay.birim.ad}
               </p>
-              <p>
+              <p className="meta">
                 Üretici: {detay.ureticiBirimAd} · Sahip: {detay.sahipKurum} · Kaynak:{" "}
                 {detay.kaynakSistem}
               </p>
@@ -403,14 +399,14 @@ export function KayitEkrani() {
               </p>
               {detay.durum === "TASLAK" ? (
                 <p>
-                  <button type="button" onClick={() => void tamamla()}>
+                  <button className="dugme-ana" type="button" onClick={() => void tamamla()}>
                     Kaydı tamamla
                   </button>
                 </p>
               ) : null}
 
-              <h3 style={{ fontSize: "1rem" }}>Konum değiştir</h3>
-              <form onSubmit={(e) => void konumAta(e)} style={{ display: "grid", gap: "0.4rem" }}>
+              <h3>Konum değiştir</h3>
+              <form className="form-izgara" onSubmit={(e) => void konumAta(e)}>
                 <select name="konumId" required defaultValue={detay.konum?.id}>
                   {agac?.konumlar.map((k) => (
                     <option key={k.id} value={k.id}>
@@ -422,8 +418,8 @@ export function KayitEkrani() {
                 <button type="submit">Konumu kaydet</button>
               </form>
 
-              <h3 style={{ fontSize: "1rem" }}>Konum tarihçesi</h3>
-              <ol>
+              <h3>Konum tarihçesi</h3>
+              <ol className="zaman-cizelgesi">
                 {detay.hareketler.map((h) => (
                   <li key={h.id}>
                     {new Date(h.createdAt).toLocaleString("tr-TR")} — {konumYazi(h.konum)}
@@ -433,10 +429,10 @@ export function KayitEkrani() {
                 ))}
               </ol>
 
-              <h3 style={{ fontSize: "1rem" }}>Belgeler</h3>
-              <ul>
+              <h3>Belgeler</h3>
+              <ul className="agac">
                 {detay.belgeler.map((b) => (
-                  <li key={b.id} style={{ marginBottom: "1rem" }}>
+                  <li className="belge-kart" key={b.id}>
                     {b.kod} · {b.tur}
                     {b.sayi ? ` ${b.sayi}` : ""} — {b.konu}
                     {b.ekler.length > 0
@@ -462,17 +458,11 @@ export function KayitEkrani() {
                         </li>
                       ))}
                     </ul>
-                    <form
-                      onSubmit={(e) => void icerikYukle(e, b.id)}
-                      style={{ display: "grid", gap: "0.3rem", marginTop: "0.4rem" }}
-                    >
+                    <form className="form-izgara" onSubmit={(e) => void icerikYukle(e, b.id)}>
                       <input name="dosya" type="file" required />
                       <button type="submit">Özgün ikili bağla</button>
                     </form>
-                    <form
-                      onSubmit={(e) => void taramaYukle(e, b.id)}
-                      style={{ display: "grid", gap: "0.3rem", marginTop: "0.4rem" }}
-                    >
+                    <form className="form-izgara" onSubmit={(e) => void taramaYukle(e, b.id)}>
                       <input name="dosya" type="file" required />
                       <input name="cihaz" required placeholder="Cihaz" defaultValue="Tarayıcı 1" />
                       <input name="operatorAd" required placeholder="Operatör" defaultValue="test-operator" />
@@ -496,7 +486,7 @@ export function KayitEkrani() {
                   </li>
                 ))}
               </ul>
-              <form onSubmit={(e) => void belgeEkle(e)} style={{ display: "grid", gap: "0.4rem" }}>
+              <form className="form-izgara" onSubmit={(e) => void belgeEkle(e)}>
                 <input name="kod" required placeholder="Belge kimliği" />
                 <input name="tur" required placeholder="Tür" defaultValue="Yazı" />
                 <input name="sayi" placeholder="Sayı" />

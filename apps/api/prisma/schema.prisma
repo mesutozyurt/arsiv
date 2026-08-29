@@ -16,6 +16,7 @@ enum NushaTuru {
 enum DosyaDurumu {
   TASLAK
   KAYITLI
+  IMHA_EDILDI
 }
 
 enum IcerikRolu {
@@ -307,16 +308,18 @@ model HukukiBekletme {
 }
 
 model Odunc {
-  id          String       @id @default(uuid()) @db.Uuid
-  dosyaId     String       @db.Uuid
-  dosya       Dosya        @relation(fields: [dosyaId], references: [id])
-  talepEden   String
-  birimAd     String
-  teslimTarih DateTime     @default(now())
-  sonTarih    DateTime
-  iadeTarih   DateTime?
-  durum       OduncDurumu  @default(ACIK)
-  createdAt   DateTime     @default(now())
+  id           String       @id @default(uuid()) @db.Uuid
+  dosyaId      String       @db.Uuid
+  dosya        Dosya        @relation(fields: [dosyaId], references: [id])
+  talepEden    String
+  birimAd      String
+  teslimTarih  DateTime     @default(now())
+  sonTarih     DateTime
+  iadeTarih    DateTime?
+  uzatmaSayisi Int          @default(0)
+  kondisyon    String?
+  durum        OduncDurumu  @default(ACIK)
+  createdAt    DateTime     @default(now())
 }
 
 model ImhaListesi {
@@ -351,6 +354,8 @@ model ImhaOy {
   kabul     Boolean
   gerekce   String?
   createdAt DateTime    @default(now())
+
+  @@unique([listeId, uyeAd])
 }
 
 model Talep {

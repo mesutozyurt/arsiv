@@ -1,6 +1,7 @@
-import { Injectable, OnModuleInit, UnauthorizedException } from "@nestjs/common";
+import { Injectable, NotFoundException, OnModuleInit, UnauthorizedException } from "@nestjs/common";
 import { compare, hash } from "bcryptjs";
 import { sign } from "jsonwebtoken";
+import { Rol } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import type { Aktor } from "./aktor";
 
@@ -15,19 +16,26 @@ export class AuthService implements OnModuleInit {
   }
 
   async tohumKullanici(): Promise<void> {
-    if ((await this.prisma.kullanici.count()) > 0) return;
     const fen = await this.prisma.birim.findUnique({ where: { kod: "FI" } });
     const ozet = await hash(LAB_SIFRE, 10);
-    const satirlar = [
-      { kullaniciAdi: "arsiv", ad: "Arşiv memuru", rol: "ARSIV_MEMURU" as const, birimId: null },
-      { kullaniciAdi: "birim", ad: "Birim sorumlusu", rol: "BIRIM_SORUMLUSU" as const, birimId: fen?.id ?? null },
-      { kullaniciAdi: "denetci", ad: "İç denetçi", rol: "DENETCI" as const, birimId: null },
-      { kullaniciAdi: "bilisim", ad: "Bilişim (içerik kapalı)", rol: "BILISIM" as const, birimId: null },
-      { kullaniciAdi: "komisyon", ad: "İmha komisyonu", rol: "KOMISYON" as const, birimId: null },
-      { kullaniciAdi: "yonetici", ad: "Üst yönetici", rol: "UST_YONETICI" as const, birimId: null },
+    const satirlar: { kullaniciAdi: string; ad: string; rol: Rol; birimId: string | null }[] = [
+      { kullaniciAdi: "arsiv", ad: "Arşiv memuru", rol: Rol.ARSIV_MEMURU, birimId: null },
+      { kullaniciAdi: "birim", ad: "Birim sorumlusu", rol: Rol.BIRIM_SORUMLUSU, birimId: fen?.id ?? null },
+      { kullaniciAdi: "denetci", ad: "İç denetçi", rol: Rol.DENETCI, birimId: null },
+      { kullaniciAdi: "bilisim", ad: "Bilişim (içerik kapalı)", rol: Rol.BILISIM, birimId: null },
+      { kullaniciAdi: "komisyon", ad: "Komisyon üyesi 1", rol: Rol.KOMISYON, birimId: null },
+      { kullaniciAdi: "komisyon2", ad: "Komisyon üyesi 2", rol: Rol.KOMISYON, birimId: null },
+      { kullaniciAdi: "komisyon3", ad: "Komisyon üyesi 3", rol: Rol.KOMISYON, birimId: null },
+      { kullaniciAdi: "komisyon4", ad: "Komisyon üyesi 4", rol: Rol.KOMISYON, birimId: null },
+      { kullaniciAdi: "komisyon5", ad: "Komisyon üyesi 5", rol: Rol.KOMISYON, birimId: null },
+      { kullaniciAdi: "yonetici", ad: "Üst yönetici", rol: Rol.UST_YONETICI, birimId: null },
     ];
     for (const s of satirlar) {
-      await this.prisma.kullanici.create({ data: { ...s, sifreOzet: ozet } });
+      await this.prisma.kullanici.upsert({
+        where: { kullaniciAdi: s.kullaniciAdi },
+        create: { ...s, sifreOzet: ozet },
+        update: { ad: s.ad, rol: s.rol, birimId: s.birimId },
+      });
     }
   }
 
@@ -49,5 +57,30 @@ export class AuthService implements OnModuleInit {
       expiresIn: "12h",
     });
     return { token, aktor };
+  }
+
+  kullanicilar() {
+    return this.prisma.kullanici.findMany({
+      select: {
+        id: true,
+        kullaniciAdi: true,
+        ad: true,
+        rol: true,
+        birimId: true,
+        aktif: true,
+        createdAt: true,
+      },
+      orderBy: { kullaniciAdi: "asc" },
+    });
+  }
+
+  async kapat(id: string) {
+    const k = await this.prisma.kullanici.findUnique({ where: { id } });
+    if (!k) throw new NotFoundException("Kullanıcı yok");
+    return this.prisma.kullanici.update({
+      where: { id },
+      data: { aktif: false },
+      select: { id: true, kullaniciAdi: true, aktif: true },
+    });
   }
 }

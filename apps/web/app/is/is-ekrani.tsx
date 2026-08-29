@@ -96,15 +96,17 @@ export function IsEkrani() {
     }
   }, [ben, sekme]);
 
-  if (!ben) return <main style={{ padding: "1.5rem" }}>Oturum açılıyor…</main>;
+  if (!ben) return <main className="yukleniyor">Oturum açılıyor…</main>;
 
   return (
-    <main style={{ maxWidth: "58rem", margin: "0 auto", padding: "1.25rem" }}>
-      <h1 style={{ fontSize: "1.35rem" }}>Arşiv işlemleri</h1>
-      <p>
-        {ben.ad} — {rolAd(ben.rol)}
-      </p>
-      <nav style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", margin: "1rem 0" }}>
+    <main className="kabuk">
+      <header className="sayfa-baslik">
+        <h1>Arşiv işlemleri</h1>
+        <p>
+          {ben.ad} — {rolAd(ben.rol)}
+        </p>
+      </header>
+      <nav className="sekmeler" aria-label="İşlem sekmeleri">
         {(
           [
             ["ara", "Dosya ara"],
@@ -115,17 +117,35 @@ export function IsEkrani() {
             ["rapor", "Raporlar"],
           ] as const
         ).map(([id, ad]) => (
-          <button key={id} type="button" onClick={() => { setHata(null); setBilgi(null); setSekme(id); }}>
+          <button
+            key={id}
+            type="button"
+            aria-selected={sekme === id}
+            onClick={() => {
+              setHata(null);
+              setBilgi(null);
+              setSekme(id);
+            }}
+          >
             {ad}
           </button>
         ))}
       </nav>
-      {hata ? <p role="alert" style={{ color: "#8a1f1f" }}>{hata}</p> : null}
-      {bilgi ? <p role="status">{bilgi}</p> : null}
+      {hata ? (
+        <p className="uyari" role="alert">
+          {hata}
+        </p>
+      ) : null}
+      {bilgi ? (
+        <p className="bilgi" role="status">
+          {bilgi}
+        </p>
+      ) : null}
 
       {sekme === "ara" ? (
-        <section>
+        <section className="kart">
           <form
+            className="satir-form"
             onSubmit={(e) => {
               e.preventDefault();
               const q = String(new FormData(e.currentTarget).get("q"));
@@ -133,13 +153,12 @@ export function IsEkrani() {
                 .then(setArama)
                 .catch((err: Error) => setHata(err.message));
             }}
-            style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}
           >
-            <label style={{ flex: 1 }}>
+            <label>
               Dosya kodu veya konu
-              <input name="q" required style={{ width: "100%" }} />
+              <input name="q" required />
             </label>
-            <button type="submit" style={{ alignSelf: "end" }}>
+            <button className="dugme-ana" type="submit">
               Ara
             </button>
           </form>
@@ -148,9 +167,10 @@ export function IsEkrani() {
       ) : null}
 
       {sekme === "odunc" ? (
-        <section>
-          <h2 style={{ fontSize: "1.05rem" }}>Açık ve iade edilmiş ödünçler</h2>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <section className="kart">
+          <h2>Açık ve iade edilmiş ödünçler</h2>
+          <div className="tablo-sar">
+          <table>
             <thead>
               <tr>
                 <th align="left">Dosya</th>
@@ -170,7 +190,11 @@ export function IsEkrani() {
                     {o.talepEden} ({o.birimAd})
                   </td>
                   <td>{new Date(o.sonTarih).toLocaleDateString("tr-TR")}</td>
-                  <td>{o.durum === "ACIK" ? "Dışarıda" : "İade"}</td>
+                  <td>
+                    <span className={`rozet ${o.durum === "ACIK" ? "rozet-disarida" : "rozet-kayitli"}`}>
+                      {o.durum === "ACIK" ? "Dışarıda" : "İade"}
+                    </span>
+                  </td>
                   <td>
                     {o.durum === "ACIK" ? (
                       <button
@@ -190,8 +214,10 @@ export function IsEkrani() {
               ))}
             </tbody>
           </table>
-          <h3 style={{ fontSize: "1rem" }}>Yeni ödünç</h3>
+          </div>
+          <h3>Yeni ödünç</h3>
           <form
+            className="form-izgara form-dar"
             onSubmit={(e: FormEvent<HTMLFormElement>) => {
               e.preventDefault();
               const f = new FormData(e.currentTarget);
@@ -208,11 +234,10 @@ export function IsEkrani() {
                 .then(() => setBilgi("Ödünç kaydı açıldı. Aynı asıl ikinci kişiye verilemez."))
                 .catch((err: Error) => setHata(err.message));
             }}
-            style={{ display: "grid", gap: "0.45rem", maxWidth: "28rem" }}
           >
             <label>
               Dosya
-              <select name="dosyaId" required style={{ width: "100%" }}>
+              <select name="dosyaId" required>
                 {dosyalar.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.kod} — {d.konu}
@@ -232,14 +257,16 @@ export function IsEkrani() {
               Süre (gün)
               <input name="gun" type="number" min={1} defaultValue={7} />
             </label>
-            <button type="submit">Ödünç ver</button>
+            <button className="dugme-ana" type="submit">
+              Ödünç ver
+            </button>
           </form>
         </section>
       ) : null}
 
       {sekme === "imha" ? (
-        <section>
-          <p>Sistem otomatik silmez. Sıra: aday liste → komisyon oyu → DAB görüşü → üst onay → icra.</p>
+        <section className="kart">
+          <p className="lede">Sistem otomatik silmez. Sıra: aday liste → komisyon oyu → DAB görüşü → üst onay → icra.</p>
           {ben.rol === "ARSIV_MEMURU" ? (
           <form
             onSubmit={(e: FormEvent<HTMLFormElement>) => {
@@ -266,9 +293,9 @@ export function IsEkrani() {
           </form>
           ) : null}
               {imhalar.map((l) => (
-            <article key={l.id} style={{ borderTop: "1px solid #ddd", marginTop: "1rem", paddingTop: "0.8rem" }}>
-              <h3 style={{ fontSize: "1rem" }}>
-                {l.kod} — aşama: {l.asama}
+            <article className="belge-kart" key={l.id}>
+              <h3>
+                {l.kod} — <span className="rozet">{l.asama}</span>
               </h3>
               <p>Hazırlayan: {l.hazirlayan}</p>
               <ul>
@@ -281,7 +308,7 @@ export function IsEkrani() {
               <p>
                 Oylar: {l.oylar.map((o) => `${o.uyeAd} ${o.kabul ? "kabul" : "ret"}`).join(", ") || "yok"}
               </p>
-              <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+              <div className="sekmeler">
                 {ben.rol === "KOMISYON" ? (
                   <button
                     type="button"
@@ -344,7 +371,7 @@ export function IsEkrani() {
       ) : null}
 
       {sekme === "talep" ? (
-        <section>
+        <section className="kart">
           <ul>
             {talepler.map((t) => (
               <li key={t.id}>
@@ -353,8 +380,9 @@ export function IsEkrani() {
               </li>
             ))}
           </ul>
-          <h3 style={{ fontSize: "1rem" }}>Yeni başvuru</h3>
+          <h3>Yeni başvuru</h3>
           <form
+            className="form-izgara form-dar"
             onSubmit={(e: FormEvent<HTMLFormElement>) => {
               e.preventDefault();
               const f = new FormData(e.currentTarget);
@@ -374,7 +402,6 @@ export function IsEkrani() {
                 .then(() => setBilgi("Başvuru kaydı açıldı."))
                 .catch((err: Error) => setHata(err.message));
             }}
-            style={{ display: "grid", gap: "0.4rem", maxWidth: "28rem" }}
           >
             <label>
               Tür
@@ -419,7 +446,8 @@ export function IsEkrani() {
       ) : null}
 
       {sekme === "denetim" ? (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div className="kart tablo-sar">
+        <table>
           <thead>
             <tr>
               <th align="left">Zaman</th>
@@ -441,15 +469,16 @@ export function IsEkrani() {
             ))}
           </tbody>
         </table>
+        </div>
       ) : null}
 
       {sekme === "rapor" && rapor ? (
-        <section>
+        <section className="kart">
           <p>
             {rapor.yillikKontrol.donem} yıllık kontrol: {rapor.yillikKontrol.kayitliDosya} kayıtlı
             dosya.
           </p>
-          <h3 style={{ fontSize: "1rem" }}>Geciken ödünç</h3>
+          <h3>Geciken ödünç</h3>
           <ul>
             {rapor.gecikenOdunc.length === 0 ? <li>Yok</li> : rapor.gecikenOdunc.map((o) => (
               <li key={o.id}>
@@ -457,7 +486,7 @@ export function IsEkrani() {
               </li>
             ))}
           </ul>
-          <h3 style={{ fontSize: "1rem" }}>Açık başvurular</h3>
+          <h3>Açık başvurular</h3>
           <ul>
             {rapor.acikTalepler.length === 0 ? <li>Yok</li> : rapor.acikTalepler.map((t) => (
               <li key={t.id}>
@@ -474,7 +503,8 @@ export function IsEkrani() {
 function DosyaTablo({ satirlar }: { satirlar: Dosya[] }) {
   if (satirlar.length === 0) return <p>Sonuç yok. Yetkiniz olmayan kayıt listelenmez.</p>;
   return (
-    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+    <div className="tablo-sar">
+    <table>
       <thead>
         <tr>
           <th align="left">Kod</th>
@@ -496,6 +526,7 @@ function DosyaTablo({ satirlar }: { satirlar: Dosya[] }) {
         ))}
       </tbody>
     </table>
+    </div>
   );
 }
 

@@ -1,10 +1,13 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useId, useState } from "react";
 import { api, tokenYaz } from "../lib/api";
 
 export default function Giris() {
   const [hata, setHata] = useState<string | null>(null);
+  const kullaniciId = useId();
+  const sifreId = useId();
+  const hataId = useId();
 
   async function gonder(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -25,23 +28,45 @@ export default function Giris() {
   }
 
   return (
-    <main style={{ maxWidth: "24rem", margin: "3rem auto", padding: "0 1rem" }}>
-      <h1>Personel girişi</h1>
-      {hata ? <p role="alert">{hata}</p> : null}
-      <form onSubmit={(e) => void gonder(e)} style={{ display: "grid", gap: "0.65rem" }}>
-        <label>
-          Kullanıcı adı
-          <input name="kullaniciAdi" required autoComplete="username" style={{ width: "100%" }} />
-        </label>
-        <label>
-          Şifre
-          <input name="sifre" type="password" required autoComplete="current-password" style={{ width: "100%" }} />
-        </label>
-        <button type="submit">Giriş</button>
-      </form>
-      <p style={{ color: "#555", fontSize: "0.9rem" }}>
-        Test hesapları: arsiv, birim, denetci, komisyon, yonetici, bilisim — şifre Lab-2026!
-      </p>
+    <main className="giris-kabuk">
+      <section className="kart giris-kart">
+        <h1>Personel girişi</h1>
+        <p className="lede">Kurum arşivi yalnızca yetkili hesapla açılır.</p>
+        {hata ? (
+          <p className="uyari" id={hataId} role="alert">
+            {hata}
+          </p>
+        ) : null}
+        <form className="form-izgara" onSubmit={(e) => void gonder(e)}>
+          <label htmlFor={kullaniciId}>
+            Kullanıcı adı
+            <input
+              id={kullaniciId}
+              name="kullaniciAdi"
+              required
+              autoComplete="username"
+              aria-invalid={hata ? true : undefined}
+              aria-describedby={hata ? hataId : undefined}
+            />
+          </label>
+          <label htmlFor={sifreId}>
+            Şifre
+            <input
+              id={sifreId}
+              name="sifre"
+              type="password"
+              required
+              autoComplete="current-password"
+            />
+          </label>
+          <button className="dugme-ana" type="submit">
+            Giriş yap
+          </button>
+        </form>
+        <p className="meta" style={{ marginTop: "1rem" }}>
+          Test: arsiv, birim, denetci, komisyon, yonetici, bilisim — şifre Lab-2026!
+        </p>
+      </section>
     </main>
   );
 }

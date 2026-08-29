@@ -1,38 +1,49 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { cikis, tokenAl } from "./lib/api";
 
 export function Nav() {
-  const varMi = typeof window !== "undefined" && !!tokenAl();
+  const yol = usePathname();
+  const [girisVar, setGirisVar] = useState(false);
+
+  useEffect(() => {
+    setGirisVar(!!tokenAl());
+  }, [yol]);
+
   return (
-    <header
-      style={{
-        borderBottom: "1px solid #ddd",
-        padding: "0.65rem 1.2rem",
-        display: "flex",
-        gap: "1.1rem",
-        flexWrap: "wrap",
-        alignItems: "center",
-      }}
-    >
-      <a href="/" style={{ fontWeight: 600 }}>
+    <header className="app-ust">
+      <a className="app-marka" href="/">
+        <span className="app-mhur" aria-hidden="true">
+          KA
+        </span>
         Kurum arşivi
       </a>
-      <a href="/kayit">Tasnif ve konum</a>
-      <a href="/is">İşlemler</a>
-      {varMi ? (
-        <button
-          type="button"
-          onClick={() => {
-            cikis();
-            window.location.href = "/giris";
-          }}
-        >
-          Çıkış
-        </button>
-      ) : (
-        <a href="/giris">Giriş</a>
-      )}
+      <nav aria-label="Ana menü">
+        <a href="/kayit" aria-current={yol === "/kayit" ? "page" : undefined}>
+          Tasnif
+        </a>
+        <a href="/is" aria-current={yol === "/is" ? "page" : undefined}>
+          İşlemler
+        </a>
+        {girisVar ? (
+          <button
+            className="baglanti-dugme"
+            type="button"
+            onClick={() => {
+              cikis();
+              window.location.href = "/giris";
+            }}
+          >
+            Çıkış
+          </button>
+        ) : (
+          <a href="/giris" aria-current={yol === "/giris" ? "page" : undefined}>
+            Giriş
+          </a>
+        )}
+      </nav>
     </header>
   );
 }
