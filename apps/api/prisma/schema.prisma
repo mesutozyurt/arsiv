@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum NushaTuru {
+  ASIL
+  KOPYA
+  YETKILI_NUSHA
+}
+
+enum DosyaDurumu {
+  TASLAK
+  KAYITLI
+}
+
+model Birim {
+  id        String   @id @default(uuid()) @db.Uuid
+  kod       String   @unique
+  ad        String
+  ustId     String?  @db.Uuid
+  ust       Birim?   @relation("BirimAgac", fields: [ustId], references: [id])
+  altlar    Birim[]  @relation("BirimAgac")
+  seriler   Seri[]
+  dosyalar  Dosya[]
+  createdAt DateTime @default(now())
+}
+
+model Fon {
+  id               String    @id @default(uuid()) @db.Uuid
+  kod              String    @unique
+  ad               String
+  ureticiKurum     String
+  sahipKurum       String
+  kapsamBaslangic  DateTime?
+  kapsamBitis      DateTime?
+  devralmaDayanagi String?
+  seriler          Seri[]
+  createdAt        DateTime  @default(now())
+}
+
+model Seri {
+  id        String   @id @default(uuid()) @db.Uuid
+  kod       String   @unique
+  ad        String
+  fonId     String   @db.Uuid
+  fon       Fon      @relation(fields: [fonId], references: [id])
+  birimId   String?  @db.Uuid
+  birim     Birim?   @relation(fields: [birimId], references: [id])
+  islev     String?
+  sdpKodu   String?
+  gizlilik  String   @default("NORMAL")
+  dosyalar  Dosya[]
+  createdAt DateTime @default(now())
+}
+
+model FizikselKonum {
+  id         String          @id @default(uuid()) @db.Uuid
+  kod        String          @unique
+  oda        String
+  raf        String
+  dolap      String?
+  kutu       String
+  klasor     String?
+  barkod     String          @unique
+  dosyalar   Dosya[]
+  hareketler KonumHareketi[]
+  createdAt  DateTime        @default(now())
+}
+
+model Dosya {
+  id             String          @id @default(uuid()) @db.Uuid
+  kod            String          @unique
+  konu           String
+  seriId         String          @db.Uuid
+  seri           Seri            @relation(fields: [seriId], references: [id])
+  birimId        String          @db.Uuid
+  birim          Birim           @relation(fields: [birimId], references: [id])
+  nushaTuru      NushaTuru
+  ureticiBirimAd String
+  sahipKurum     String
+  kaynakSistem   String          @default("ARSIV")
+  durum          DosyaDurumu     @default(TASLAK)
+  konumId        String?         @db.Uuid
+  konum          FizikselKonum?  @relation(fields: [konumId], references: [id])
+  tarihBaslangic DateTime?
+  tarihBitis     DateTime?
+  belgeler       Belge[]
+  hareketler     KonumHareketi[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model KonumHareketi {
+  id          String         @id @default(uuid()) @db.Uuid
+  dosyaId     String         @db.Uuid
+  dosya       Dosya          @relation(fields: [dosyaId], references: [id])
+  konumId     String         @db.Uuid
+  konum       FizikselKonum  @relation(fields: [konumId], references: [id])
+  oncekiOzet  String?
+  gerekce     String?
+  createdAt   DateTime       @default(now())
+}
+
+model Belge {
+  id        String     @id @default(uuid()) @db.Uuid
+  kod       String     @unique
+  dosyaId   String     @db.Uuid
+  dosya     Dosya      @relation(fields: [dosyaId], references: [id])
+  tur       String
+  sayi      String?
+  tarih     DateTime?
+  konu      String
+  kaynak    String     @default("ARSIV")
+  uretici   String
+  nushaTuru NushaTuru
+  gizlilik  String     @default("NORMAL")
+  ekler     Ek[]
+  createdAt DateTime   @default(now())
+}
+
+model Ek {
+  id        String   @id @default(uuid()) @db.Uuid
+  kod       String   @unique
+  belgeId   String   @db.Uuid
+  belge     Belge    @relation(fields: [belgeId], references: [id])
+  sira      Int
+  aciklama  String
+  createdAt DateTime @default(now())
+}

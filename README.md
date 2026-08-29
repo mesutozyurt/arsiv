@@ -15,4 +15,6 @@ npm run build
 `/opt/lab/apps/arsiv` içinde `./deploy.sh` — `git pull` + `docker compose up`.
 
 - Web: `/`
+- Kayıt: `/kayit`
 - API sağlık: `/api/v1/health`
+- Ağaç: `/api/v1/agac`

@@ -16,9 +16,14 @@ export default async function Page() {
   return (
     <main style={{ maxWidth: "40rem", margin: "4rem auto", padding: "0 1.5rem" }}>
       <h1 style={{ fontSize: "1.4rem" }}>Arşiv laboratuvarı</h1>
-      <p>Belediye arşiv yazılımının test iskeleti. Kaynak: GitHub <code>main</code>.</p>
+      <p>
+        Belediye arşiv yazılımı — Dilim 1: fon, seri, dosya, belge ve fiziksel konum.
+      </p>
       <p>
         API: <strong>{durum}</strong>
+      </p>
+      <p>
+        <a href="/kayit">Kayıt ekranına git</a>
       </p>
     </main>
   );
