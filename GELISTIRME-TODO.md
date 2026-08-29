@@ -44,10 +44,10 @@ Fon → seri → birim → dosya → belge + fiziksel konum. Kimlik, asıl/kopya
 
 | ID | İş | FR/US | Durum |
 |---|---|---|---|
-| T-30 | MinIO (Compose) + içerik hash; özgün üzerine yazma yok | mimari | **bitti** (doğrulama bekleniyor) |
-| T-31 | Belgeye ikili bağlama (format, boyut, hash) | FR-01, FR-02 | **bitti** (doğrulama bekleniyor) |
-| T-32 | Tarama işi kaydı: cihaz, operatör, sayfa, profil, kalite, hash | FR-05, US-03 | **bitti** (doğrulama bekleniyor) |
-| T-33 | Yeniden tarama önceki görüntüyü silmez | FR-05 | **bitti** (doğrulama bekleniyor) |
+| T-30 | MinIO (Compose) + içerik hash; özgün üzerine yazma yok | mimari | **bitti** |
+| T-31 | Belgeye ikili bağlama (format, boyut, hash) | FR-01, FR-02 | **bitti** |
+| T-32 | Tarama işi kaydı: cihaz, operatör, sayfa, profil, kalite, hash | FR-05, US-03 | **bitti** |
+| T-33 | Yeniden tarama önceki görüntüyü silmez | FR-05 | **bitti** |
 
 ## Dilim 3 — kimlik, yetki, denetim
 
