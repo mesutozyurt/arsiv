@@ -19,3 +19,5 @@ npm run build
 - API sağlık: `/api/v1/health`
 - Ağaç: `/api/v1/agac`
 - Nesne indir: `/api/v1/nesneler/:id`
+- Giriş: `/giris` (lab: `arsiv` / `Lab-2026!`)
+- İşlemler: `/is`

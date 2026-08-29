@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import { api, yukle } from "../lib/api";
 
 type Konum = {
   id: string;
@@ -93,31 +94,6 @@ function konumYazi(konum: Konum): string {
   ]
     .filter(Boolean)
     .join(" · ");
-}
-
-async function yukle<T>(yol: string, form: FormData): Promise<T> {
-  const yanit = await fetch(yol, { method: "POST", body: form });
-  const govde = await yanit.json().catch(() => ({}));
-  if (!yanit.ok) {
-    const mesaj =
-      (govde as { message?: string | string[] }).message ?? yanit.statusText;
-    throw new Error(Array.isArray(mesaj) ? mesaj.join(", ") : String(mesaj));
-  }
-  return govde as T;
-}
-
-async function api<T>(yol: string, init?: RequestInit): Promise<T> {
-  const yanit = await fetch(yol, {
-    ...init,
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
-  });
-  const govde = await yanit.json().catch(() => ({}));
-  if (!yanit.ok) {
-    const mesaj =
-      (govde as { message?: string | string[] }).message ?? yanit.statusText;
-    throw new Error(Array.isArray(mesaj) ? mesaj.join(", ") : String(mesaj));
-  }
-  return govde as T;
 }
 
 export function KayitEkrani() {

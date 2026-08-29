@@ -17,6 +17,7 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-arsiv}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET: arsiv
+      JWT_SECRET: ${JWT_SECRET:-lab-jwt-degistir}
     depends_on:
       postgres:
         condition: service_healthy

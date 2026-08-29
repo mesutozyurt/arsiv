@@ -29,6 +29,49 @@ enum KaliteSonucu {
   KALDI
 }
 
+enum Rol {
+  ARSIV_MEMURU
+  BIRIM_SORUMLUSU
+  DENETCI
+  BILISIM
+  KOMISYON
+  UST_YONETICI
+}
+
+enum OduncDurumu {
+  ACIK
+  IADE
+}
+
+enum ImhaAsama {
+  ADAY
+  KOMISYON
+  DAB_GORUS
+  UST_ONAY
+  ICRA
+  IPTAL
+}
+
+enum TalepTuru {
+  SURET
+  INCELEME
+  BILGI_EDINME
+  DILEKCE
+  KVKK
+}
+
+enum TalepDurumu {
+  ACIK
+  CEVAPLANDI
+  RED
+}
+
+enum IletisimDurumu {
+  BEKLIYOR
+  ISLENDI
+  HATA
+}
+
 model Birim {
   id        String   @id @default(uuid()) @db.Uuid
   kod       String   @unique
@@ -36,9 +79,10 @@ model Birim {
   ustId     String?  @db.Uuid
   ust       Birim?   @relation("BirimAgac", fields: [ustId], references: [id])
   altlar    Birim[]  @relation("BirimAgac")
-  seriler   Seri[]
-  dosyalar  Dosya[]
-  createdAt DateTime @default(now())
+  seriler     Seri[]
+  dosyalar    Dosya[]
+  kullanicilar Kullanici[]
+  createdAt   DateTime @default(now())
 }
 
 model Fon {
@@ -102,6 +146,13 @@ model Dosya {
   tarihBitis     DateTime?
   belgeler       Belge[]
   hareketler     KonumHareketi[]
+  planSurumId    String?         @db.Uuid
+  planSurum      SaklamaSurumu?  @relation(fields: [planSurumId], references: [id])
+  baslangicOlayi String?
+  bekletmeler    HukukiBekletme[]
+  oduncler       Odunc[]
+  imhaAdaylari   ImhaAday[]
+  talepler       Talep[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 }
@@ -133,6 +184,9 @@ model Belge {
   ekler      Ek[]
   icerikler  BelgeIcerik[]
   taramalar  Tarama[]
+  eypPaketler EypPaket[]
+  imzaKanitlari ImzaKaniti[]
+  ocrOneriler OcrOneri[]
   createdAt  DateTime      @default(now())
 }
 
@@ -145,8 +199,9 @@ model Nesne {
   depoAnahtari String        @unique
   bucket       String
   icerikler    BelgeIcerik[]
-  taramalar    Tarama[]
-  createdAt    DateTime      @default(now())
+  taramalar     Tarama[]
+  karartmalar   KarartilmisKopya[]
+  createdAt     DateTime         @default(now())
 }
 
 model BelgeIcerik {
@@ -184,5 +239,212 @@ model Ek {
   belge     Belge    @relation(fields: [belgeId], references: [id])
   sira      Int
   aciklama  String
+  createdAt DateTime @default(now())
+}
+
+model Kullanici {
+  id           String   @id @default(uuid()) @db.Uuid
+  kullaniciAdi String   @unique
+  ad           String
+  sifreOzet    String
+  rol          Rol
+  birimId      String?  @db.Uuid
+  birim        Birim?   @relation(fields: [birimId], references: [id])
+  aktif        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+model DenetimOlayi {
+  id          String   @id @default(uuid()) @db.Uuid
+  sira        Int      @unique @default(autoincrement())
+  aktorId     String?
+  aktorAd     String
+  rol         String
+  islem       String
+  yol         String
+  nesneTur    String?
+  nesneId     String?
+  ozet        String
+  oncekiHash  String?
+  hash        String
+  createdAt   DateTime @default(now())
+}
+
+model SaklamaPlani {
+  id        String          @id @default(uuid()) @db.Uuid
+  kod       String          @unique
+  ad        String
+  surumler  SaklamaSurumu[]
+  createdAt DateTime        @default(now())
+}
+
+model SaklamaSurumu {
+  id             String       @id @default(uuid()) @db.Uuid
+  planId         String       @db.Uuid
+  plan           SaklamaPlani @relation(fields: [planId], references: [id])
+  surum          Int
+  yururluk       DateTime
+  sdpKodu        String
+  sureYil        Int
+  baslangicOlayi String
+  dabOnayNo      String?
+  dosyalar       Dosya[]
+  createdAt      DateTime     @default(now())
+
+  @@unique([planId, surum])
+}
+
+model HukukiBekletme {
+  id        String    @id @default(uuid()) @db.Uuid
+  dosyaId   String    @db.Uuid
+  dosya     Dosya     @relation(fields: [dosyaId], references: [id])
+  sebep     String
+  makam     String
+  baslangic DateTime  @default(now())
+  bitis     DateTime?
+  aktif     Boolean   @default(true)
+  createdAt DateTime  @default(now())
+}
+
+model Odunc {
+  id          String       @id @default(uuid()) @db.Uuid
+  dosyaId     String       @db.Uuid
+  dosya       Dosya        @relation(fields: [dosyaId], references: [id])
+  talepEden   String
+  birimAd     String
+  teslimTarih DateTime     @default(now())
+  sonTarih    DateTime
+  iadeTarih   DateTime?
+  durum       OduncDurumu  @default(ACIK)
+  createdAt   DateTime     @default(now())
+}
+
+model ImhaListesi {
+  id          String      @id @default(uuid()) @db.Uuid
+  kod         String      @unique
+  asama       ImhaAsama   @default(ADAY)
+  hazirlayan  String
+  dabGorusNo  String?
+  ustOnaylayan String?
+  tutanakOzet String?
+  adaylar     ImhaAday[]
+  oylar       ImhaOy[]
+  createdAt   DateTime    @default(now())
+}
+
+model ImhaAday {
+  id        String      @id @default(uuid()) @db.Uuid
+  listeId   String      @db.Uuid
+  liste     ImhaListesi @relation(fields: [listeId], references: [id])
+  dosyaId   String      @db.Uuid
+  dosya     Dosya       @relation(fields: [dosyaId], references: [id])
+  createdAt DateTime    @default(now())
+
+  @@unique([listeId, dosyaId])
+}
+
+model ImhaOy {
+  id        String      @id @default(uuid()) @db.Uuid
+  listeId   String      @db.Uuid
+  liste     ImhaListesi @relation(fields: [listeId], references: [id])
+  uyeAd     String
+  kabul     Boolean
+  gerekce   String?
+  createdAt DateTime    @default(now())
+}
+
+model Talep {
+  id            String       @id @default(uuid()) @db.Uuid
+  kod           String       @unique
+  tur           TalepTuru
+  durum         TalepDurumu  @default(ACIK)
+  basvuranAd    String
+  vekaletVar    Boolean      @default(false)
+  vekilAd       String?
+  vekaletSure   DateTime?
+  dosyaId       String?      @db.Uuid
+  dosya         Dosya?       @relation(fields: [dosyaId], references: [id])
+  konu          String
+  sonTarih      DateTime
+  karar         String?
+  createdAt     DateTime     @default(now())
+  kopyalar      KarartilmisKopya[]
+}
+
+model KarartilmisKopya {
+  id        String   @id @default(uuid()) @db.Uuid
+  talepId   String   @db.Uuid
+  talep     Talep    @relation(fields: [talepId], references: [id])
+  kaynakNesneId String @db.Uuid
+  kaynakNesne Nesne  @relation(fields: [kaynakNesneId], references: [id])
+  kaynakHash String
+  kopyaHash  String
+  createdAt DateTime @default(now())
+}
+
+model EypPaket {
+  id           String   @id @default(uuid()) @db.Uuid
+  belgeId      String   @db.Uuid
+  belge        Belge    @relation(fields: [belgeId], references: [id])
+  paketHash    String
+  teslimDelili String
+  yon          String
+  createdAt    DateTime @default(now())
+}
+
+model ImzaKaniti {
+  id        String   @id @default(uuid()) @db.Uuid
+  belgeId   String   @db.Uuid
+  belge     Belge    @relation(fields: [belgeId], references: [id])
+  durum     String
+  kuyruk    Boolean  @default(false)
+  ozet      String
+  createdAt DateTime @default(now())
+}
+
+model EntegrasyonIletisi {
+  id            String          @id @default(uuid()) @db.Uuid
+  sistem        String
+  disKimlik     String
+  idempotans    String          @unique
+  yon           String
+  durum         IletisimDurumu  @default(BEKLIYOR)
+  hata          String?
+  createdAt     DateTime        @default(now())
+}
+
+model IceAktarim {
+  id          String   @id @default(uuid()) @db.Uuid
+  kaynak      String
+  satirOzet   String
+  durum       String   @default("KUYRUK")
+  kaynakSilindi Boolean @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model YapilandirmaSurumu {
+  id        String   @id @default(uuid()) @db.Uuid
+  anahtar   String
+  surum     Int
+  deger     String
+  onayli    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([anahtar, surum])
+}
+
+model FizikselRisk {
+  id        String   @id @default(uuid()) @db.Uuid
+  tur       String
+  aciklama  String
+  createdAt DateTime @default(now())
+}
+
+model OcrOneri {
+  id        String   @id @default(uuid()) @db.Uuid
+  belgeId   String   @db.Uuid
+  belge     Belge    @relation(fields: [belgeId], references: [id])
+  metin     String
+  onaylandi Boolean  @default(false)
   createdAt DateTime @default(now())
 }

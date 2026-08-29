@@ -1,18 +1,21 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
+  Req,
   Res,
   UploadedFile,
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { IcerikRolu } from "@prisma/client";
+import { IcerikRolu, Rol } from "@prisma/client";
 import type { Response } from "express";
+import type { Aktor } from "../auth/aktor";
 import { IcerikService } from "./icerik.service";
 import {
   BelgeOlusturDto,
@@ -31,8 +34,8 @@ export class KayitController {
   ) {}
 
   @Get("agac")
-  agac() {
-    return this.kayit.agac();
+  agac(@Req() req: { aktor: Aktor }) {
+    return this.kayit.agac(req.aktor);
   }
 
   @Get("dosyalar/:id")
@@ -95,7 +98,14 @@ export class KayitController {
   }
 
   @Get("nesneler/:id")
-  async nesneIndir(@Param("id", ParseUUIDPipe) id: string, @Res() res: Response) {
+  async nesneIndir(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Res() res: Response,
+    @Req() req: { aktor: Aktor },
+  ) {
+    if (req.aktor.rol === Rol.BILISIM) {
+      throw new ForbiddenException("Bilişim içeriğe erişemez");
+    }
     const { nesne, akis } = await this.icerik.nesneGetir(id);
     res.setHeader("Content-Type", nesne.mime);
     res.setHeader(

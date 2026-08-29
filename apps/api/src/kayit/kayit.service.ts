@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
+import type { Aktor } from "../auth/aktor";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   BelgeOlusturDto,
@@ -51,7 +52,7 @@ function konumOzeti(konum: {
 export class KayitService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async agac() {
+  async agac(aktor?: Aktor) {
     const fonlar = await this.prisma.fon.findMany({
       orderBy: { kod: "asc" },
       include: {
@@ -71,6 +72,17 @@ export class KayitService {
     const konumlar = await this.prisma.fizikselKonum.findMany({
       orderBy: { kod: "asc" },
     });
+    if (aktor?.rol === "BIRIM_SORUMLUSU" && aktor.birimId) {
+      const birimId = aktor.birimId;
+      for (const fon of fonlar) {
+        fon.seriler = fon.seriler
+          .map((s) => ({
+            ...s,
+            dosyalar: s.dosyalar.filter((d) => d.birimId === birimId),
+          }))
+          .filter((s) => s.birimId === birimId || s.dosyalar.length > 0);
+      }
+    }
     return { fonlar, birimler, konumlar };
   }
 
