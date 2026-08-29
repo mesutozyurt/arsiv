@@ -1,0 +1,84 @@
+name: arsiv
+
+services:
+  api:
+    container_name: arsiv-api
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-arsiv}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-arsiv}
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      default:
+      lab_edge:
+        aliases:
+          - arsiv-api
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/api/v1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 8
+
+  web:
+    container_name: arsiv-web
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      lab_edge:
+        aliases:
+          - arsiv-web
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 3s
+      retries: 8
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: arsiv-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-arsiv}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-arsiv}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-arsiv} -d ${POSTGRES_DB:-arsiv}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    container_name: arsiv-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+
+networks:
+  lab_edge:
+    external: true
+    name: lab_edge
+
+volumes:
+  postgres_data:
+  redis_data:
