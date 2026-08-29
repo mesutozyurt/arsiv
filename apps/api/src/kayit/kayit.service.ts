@@ -17,7 +17,17 @@ const dosyaInclude = {
   seri: { include: { fon: true } },
   birim: true,
   konum: true,
-  belgeler: { include: { ekler: true }, orderBy: { createdAt: "asc" as const } },
+  belgeler: {
+    include: {
+      ekler: true,
+      icerikler: { include: { nesne: true }, orderBy: { createdAt: "asc" as const } },
+      taramalar: {
+        include: { nesne: true, oncekiTarama: true },
+        orderBy: { createdAt: "asc" as const },
+      },
+    },
+    orderBy: { createdAt: "asc" as const },
+  },
   hareketler: { include: { konum: true }, orderBy: { createdAt: "desc" as const } },
 };
 

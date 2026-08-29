@@ -18,3 +18,4 @@ npm run build
 - Kayıt: `/kayit`
 - API sağlık: `/api/v1/health`
 - Ağaç: `/api/v1/agac`
+- Nesne indir: `/api/v1/nesneler/:id`

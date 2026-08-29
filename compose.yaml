@@ -12,11 +12,18 @@ services:
       PORT: "3001"
       DATABASE_URL: postgresql://${POSTGRES_USER:-arsiv}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-arsiv}
       REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: "9000"
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-arsiv}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: arsiv
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
+      minio:
+        condition: service_healthy
     networks:
       default:
       lab_edge:
@@ -75,6 +82,22 @@ services:
     volumes:
       - redis_data:/data
 
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: arsiv-minio
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-arsiv}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+
 networks:
   lab_edge:
     external: true
@@ -83,3 +106,4 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  minio_data:

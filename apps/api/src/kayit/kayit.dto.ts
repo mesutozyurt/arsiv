@@ -1,4 +1,4 @@
-import { NushaTuru } from "@prisma/client";
+import { KaliteSonucu, NushaTuru } from "@prisma/client";
 import { IsEnum, IsOptional, IsString, IsUUID, MinLength } from "class-validator";
 
 export class DosyaOlusturDto {
@@ -90,4 +90,29 @@ export class BelgeOlusturDto {
 
   @IsEnum(NushaTuru)
   nushaTuru!: NushaTuru;
+}
+
+export class TaramaYukleDto {
+  @IsString()
+  @MinLength(1)
+  cihaz!: string;
+
+  @IsString()
+  @MinLength(1)
+  operatorAd!: string;
+
+  @IsString()
+  sayfaSayisi!: string;
+
+  @IsString()
+  @MinLength(1)
+  profil!: string;
+
+  @IsOptional()
+  @IsEnum(KaliteSonucu)
+  kalite?: KaliteSonucu;
+
+  @IsOptional()
+  @IsString()
+  oncekiTaramaId?: string;
 }

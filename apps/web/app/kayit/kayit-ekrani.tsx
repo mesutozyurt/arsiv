@@ -34,6 +34,14 @@ type Seri = {
 
 type Fon = { id: string; kod: string; ad: string; seriler: Seri[] };
 
+type Nesne = {
+  id: string;
+  sha256: string;
+  boyut: number;
+  mime: string;
+  format: string;
+};
+
 type Belge = {
   id: string;
   kod: string;
@@ -41,6 +49,19 @@ type Belge = {
   sayi: string | null;
   konu: string;
   ekler: { id: string; sira: number; aciklama: string }[];
+  icerikler: { id: string; rol: string; createdAt: string; nesne: Nesne }[];
+  taramalar: {
+    id: string;
+    kod: string;
+    cihaz: string;
+    operatorAd: string;
+    sayfaSayisi: number;
+    profil: string;
+    kalite: string;
+    createdAt: string;
+    oncekiTaramaId: string | null;
+    nesne: Nesne;
+  }[];
 };
 
 type Hareket = {
@@ -72,6 +93,17 @@ function konumYazi(konum: Konum): string {
   ]
     .filter(Boolean)
     .join(" · ");
+}
+
+async function yukle<T>(yol: string, form: FormData): Promise<T> {
+  const yanit = await fetch(yol, { method: "POST", body: form });
+  const govde = await yanit.json().catch(() => ({}));
+  if (!yanit.ok) {
+    const mesaj =
+      (govde as { message?: string | string[] }).message ?? yanit.statusText;
+    throw new Error(Array.isArray(mesaj) ? mesaj.join(", ") : String(mesaj));
+  }
+  return govde as T;
 }
 
 async function api<T>(yol: string, init?: RequestInit): Promise<T> {
@@ -184,6 +216,32 @@ export function KayitEkrani() {
       await yenile(guncel.id);
     } catch (err) {
       setHata(err instanceof Error ? err.message : "Tamamlanamadı");
+    }
+  }
+
+  async function icerikYukle(e: FormEvent<HTMLFormElement>, belgeId: string) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    try {
+      await yukle(`/api/v1/belgeler/${belgeId}/icerik`, form);
+      e.currentTarget.reset();
+      setDetay(await api<DosyaDetay>(`/api/v1/dosyalar/${detay!.id}`));
+      setBilgi("İkili bağlandı; özgün nesne üzerine yazılmaz.");
+    } catch (err) {
+      setHata(err instanceof Error ? err.message : "Yükleme başarısız");
+    }
+  }
+
+  async function taramaYukle(e: FormEvent<HTMLFormElement>, belgeId: string) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    try {
+      await yukle(`/api/v1/belgeler/${belgeId}/taramalar`, form);
+      e.currentTarget.reset();
+      setDetay(await api<DosyaDetay>(`/api/v1/dosyalar/${detay!.id}`));
+      setBilgi("Tarama kaydı eklendi; önceki görüntü silinmedi.");
+    } catch (err) {
+      setHata(err instanceof Error ? err.message : "Tarama yüklenemedi");
     }
   }
 
@@ -402,12 +460,63 @@ export function KayitEkrani() {
               <h3 style={{ fontSize: "1rem" }}>Belgeler</h3>
               <ul>
                 {detay.belgeler.map((b) => (
-                  <li key={b.id}>
+                  <li key={b.id} style={{ marginBottom: "1rem" }}>
                     {b.kod} · {b.tur}
                     {b.sayi ? ` ${b.sayi}` : ""} — {b.konu}
                     {b.ekler.length > 0
                       ? ` (ek: ${b.ekler.map((ek) => ek.aciklama).join("; ")})`
                       : ""}
+                    <ul>
+                      {(b.icerikler ?? []).map((i) => (
+                        <li key={i.id}>
+                          {i.rol} · {i.nesne.format} · {i.nesne.boyut} B ·{" "}
+                          <a href={`/api/v1/nesneler/${i.nesne.id}`}>
+                            {i.nesne.sha256.slice(0, 12)}…
+                          </a>
+                        </li>
+                      ))}
+                      {(b.taramalar ?? []).map((t) => (
+                        <li key={t.id}>
+                          {t.kod} · {t.cihaz} · {t.operatorAd} · {t.sayfaSayisi} s. · {t.profil} ·{" "}
+                          {t.kalite}
+                          {t.oncekiTaramaId ? " · yeniden tarama" : ""} ·{" "}
+                          <a href={`/api/v1/nesneler/${t.nesne.id}`}>
+                            {t.nesne.sha256.slice(0, 12)}…
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                    <form
+                      onSubmit={(e) => void icerikYukle(e, b.id)}
+                      style={{ display: "grid", gap: "0.3rem", marginTop: "0.4rem" }}
+                    >
+                      <input name="dosya" type="file" required />
+                      <button type="submit">Özgün ikili bağla</button>
+                    </form>
+                    <form
+                      onSubmit={(e) => void taramaYukle(e, b.id)}
+                      style={{ display: "grid", gap: "0.3rem", marginTop: "0.4rem" }}
+                    >
+                      <input name="dosya" type="file" required />
+                      <input name="cihaz" required placeholder="Cihaz" defaultValue="Lab tarayıcı A" />
+                      <input name="operatorAd" required placeholder="Operatör" defaultValue="test-operator" />
+                      <input name="sayfaSayisi" type="number" min={1} required defaultValue={1} />
+                      <input name="profil" required placeholder="Profil" defaultValue="300dpi-renk-jpeg" />
+                      <select name="kalite" defaultValue="GECTI">
+                        <option value="BEKLIYOR">Kalite bekliyor</option>
+                        <option value="GECTI">Kalite geçti</option>
+                        <option value="KALDI">Kalite kaldı</option>
+                      </select>
+                      <select name="oncekiTaramaId">
+                        <option value="">İlk tarama</option>
+                        {(b.taramalar ?? []).map((t) => (
+                          <option key={t.id} value={t.id}>
+                            Yeniden tara (önceki {t.kod})
+                          </option>
+                        ))}
+                      </select>
+                      <button type="submit">Tarama kaydet</button>
+                    </form>
                   </li>
                 ))}
               </ul>

@@ -1,15 +1,34 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Res,
+  UploadedFile,
+  UseInterceptors,
+} from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { IcerikRolu } from "@prisma/client";
+import type { Response } from "express";
+import { IcerikService } from "./icerik.service";
 import {
   BelgeOlusturDto,
   DosyaGuncelleDto,
   DosyaOlusturDto,
   KonumAtaDto,
+  TaramaYukleDto,
 } from "./kayit.dto";
 import { KayitService } from "./kayit.service";
 
 @Controller("v1")
 export class KayitController {
-  constructor(private readonly kayit: KayitService) {}
+  constructor(
+    private readonly kayit: KayitService,
+    private readonly icerik: IcerikService,
+  ) {}
 
   @Get("agac")
   agac() {
@@ -47,5 +66,42 @@ export class KayitController {
   @Post("belgeler")
   belgeOlustur(@Body() dto: BelgeOlusturDto) {
     return this.kayit.belgeOlustur(dto);
+  }
+
+  @Post("belgeler/:id/icerik")
+  @UseInterceptors(FileInterceptor("dosya", { limits: { fileSize: 20 * 1024 * 1024 } }))
+  belgeIcerik(
+    @Param("id", ParseUUIDPipe) id: string,
+    @UploadedFile() dosya: Express.Multer.File,
+  ) {
+    return this.icerik.belgeIcerikBagla(id, dosya, IcerikRolu.OZGUN);
+  }
+
+  @Post("belgeler/:id/taramalar")
+  @UseInterceptors(FileInterceptor("dosya", { limits: { fileSize: 20 * 1024 * 1024 } }))
+  taramaEkle(
+    @Param("id", ParseUUIDPipe) id: string,
+    @UploadedFile() dosya: Express.Multer.File,
+    @Body() govde: TaramaYukleDto,
+  ) {
+    return this.icerik.taramaEkle(id, dosya, {
+      cihaz: govde.cihaz,
+      operatorAd: govde.operatorAd,
+      sayfaSayisi: Number(govde.sayfaSayisi),
+      profil: govde.profil,
+      kalite: govde.kalite,
+      oncekiTaramaId: govde.oncekiTaramaId || undefined,
+    });
+  }
+
+  @Get("nesneler/:id")
+  async nesneIndir(@Param("id", ParseUUIDPipe) id: string, @Res() res: Response) {
+    const { nesne, akis } = await this.icerik.nesneGetir(id);
+    res.setHeader("Content-Type", nesne.mime);
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${nesne.sha256.slice(0, 12)}.${nesne.format}"`,
+    );
+    akis.pipe(res);
   }
 }

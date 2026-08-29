@@ -18,6 +18,17 @@ enum DosyaDurumu {
   KAYITLI
 }
 
+enum IcerikRolu {
+  OZGUN
+  TUREV
+}
+
+enum KaliteSonucu {
+  BEKLIYOR
+  GECTI
+  KALDI
+}
+
 model Birim {
   id        String   @id @default(uuid()) @db.Uuid
   kod       String   @unique
@@ -118,9 +129,52 @@ model Belge {
   kaynak    String     @default("ARSIV")
   uretici   String
   nushaTuru NushaTuru
-  gizlilik  String     @default("NORMAL")
-  ekler     Ek[]
+  gizlilik   String        @default("NORMAL")
+  ekler      Ek[]
+  icerikler  BelgeIcerik[]
+  taramalar  Tarama[]
+  createdAt  DateTime      @default(now())
+}
+
+model Nesne {
+  id           String        @id @default(uuid()) @db.Uuid
+  sha256       String        @unique
+  boyut        Int
+  mime         String
+  format       String
+  depoAnahtari String        @unique
+  bucket       String
+  icerikler    BelgeIcerik[]
+  taramalar    Tarama[]
+  createdAt    DateTime      @default(now())
+}
+
+model BelgeIcerik {
+  id        String     @id @default(uuid()) @db.Uuid
+  belgeId   String     @db.Uuid
+  belge     Belge      @relation(fields: [belgeId], references: [id])
+  nesneId   String     @db.Uuid
+  nesne     Nesne      @relation(fields: [nesneId], references: [id])
+  rol       IcerikRolu @default(OZGUN)
   createdAt DateTime   @default(now())
+}
+
+model Tarama {
+  id             String        @id @default(uuid()) @db.Uuid
+  kod            String        @unique
+  belgeId        String        @db.Uuid
+  belge          Belge         @relation(fields: [belgeId], references: [id])
+  nesneId        String        @db.Uuid
+  nesne          Nesne         @relation(fields: [nesneId], references: [id])
+  cihaz          String
+  operatorAd     String
+  sayfaSayisi    Int
+  profil         String
+  kalite         KaliteSonucu  @default(BEKLIYOR)
+  oncekiTaramaId String?       @db.Uuid
+  oncekiTarama   Tarama?       @relation("TaramaZincir", fields: [oncekiTaramaId], references: [id])
+  sonrakiler     Tarama[]      @relation("TaramaZincir")
+  createdAt      DateTime      @default(now())
 }
 
 model Ek {
