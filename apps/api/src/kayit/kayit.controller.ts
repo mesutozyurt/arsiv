@@ -38,6 +38,11 @@ export class KayitController {
     return this.kayit.agac(req.aktor);
   }
 
+  @Get("dosyalar")
+  dosyaListe(@Req() req: { aktor: Aktor }) {
+    return this.kayit.dosyaListe(req.aktor);
+  }
+
   @Get("dosyalar/:id")
   dosyaGetir(@Param("id", ParseUUIDPipe) id: string) {
     return this.kayit.dosyaGetir(id);

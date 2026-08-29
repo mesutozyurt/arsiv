@@ -8,17 +8,18 @@ export function Nav() {
     <header
       style={{
         borderBottom: "1px solid #ddd",
-        padding: "0.6rem 1.2rem",
+        padding: "0.65rem 1.2rem",
         display: "flex",
-        gap: "1rem",
+        gap: "1.1rem",
         flexWrap: "wrap",
         alignItems: "center",
       }}
     >
-      <a href="/">Arşiv</a>
-      <a href="/kayit">Kayıt</a>
+      <a href="/" style={{ fontWeight: 600 }}>
+        Kurum arşivi
+      </a>
+      <a href="/kayit">Tasnif ve konum</a>
       <a href="/is">İşlemler</a>
-      <a href="/giris">Giriş</a>
       {varMi ? (
         <button
           type="button"
@@ -29,7 +30,9 @@ export function Nav() {
         >
           Çıkış
         </button>
-      ) : null}
+      ) : (
+        <a href="/giris">Giriş</a>
+      )}
     </header>
   );
 }

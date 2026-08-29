@@ -1,29 +1,15 @@
-async function apiDurumu(): Promise<string> {
-  try {
-    const yanit = await fetch("http://arsiv-api:3001/api/v1/health", {
-      cache: "no-store",
-    });
-    if (!yanit.ok) return "yanıt yok";
-    const govde = (await yanit.json()) as { status?: string };
-    return govde.status === "ok" ? "çalışıyor" : "beklenmeyen yanıt";
-  } catch {
-    return "bağlanamadı";
-  }
-}
-
-export default async function Page() {
-  const durum = await apiDurumu();
+export default function Page() {
   return (
     <main style={{ maxWidth: "40rem", margin: "3rem auto", padding: "0 1.5rem" }}>
-      <h1 style={{ fontSize: "1.4rem" }}>Belediye arşiv yazılımı</h1>
-      <p>Laboratuvar: kayıt, tarama, yetki, saklama, ödünç, imha kapıları, talep, EYP iskeleti.</p>
+      <h1 style={{ fontSize: "1.5rem" }}>Kurum arşivi</h1>
       <p>
-        API: <strong>{durum}</strong>
+        Fiziksel ve elektronik kayıtların tasnifi, konumu, ödünç, tarama, saklama ve imha
+        kapıları. Vatandaş arşivi doğrudan arayamaz; suret talebi arşiv personeli üzerinden
+        işlenir.
       </p>
       <p>
-        <a href="/giris">Giriş</a> · <a href="/kayit">Kayıt</a> · <a href="/is">İşlemler</a>
+        <a href="/giris">Personel girişi</a>
       </p>
-      <p>Lab şifresi: <code>Lab-2026!</code> — kullanıcı <code>arsiv</code></p>
     </main>
   );
 }

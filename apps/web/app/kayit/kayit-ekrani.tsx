@@ -251,12 +251,12 @@ export function KayitEkrani() {
   return (
     <main style={{ maxWidth: "72rem", margin: "0 auto", padding: "1.5rem" }}>
       <p>
-        <a href="/">← Laboratuvar</a>
+        <a href="/">← Ana sayfa</a>
       </p>
-      <h1 style={{ fontSize: "1.4rem" }}>Kayıt — fon, seri, dosya, konum</h1>
+      <h1 style={{ fontSize: "1.4rem" }}>Tasnif ve konum</h1>
       <p style={{ color: "#444" }}>
-        US-01: benzersiz kimlik, asıl/kopya, üretici/sahip ve konum olmadan kayıt
-        tamamlanmaz. Veriler sentetiktir.
+        Dosya ancak benzersiz kod, asıl/kopya, üretici/sahip ve fiziksel konum
+        ile tamamlanır.
       </p>
       {hata ? (
         <p role="alert" style={{ color: "#8a1f1f" }}>
@@ -474,7 +474,7 @@ export function KayitEkrani() {
                       style={{ display: "grid", gap: "0.3rem", marginTop: "0.4rem" }}
                     >
                       <input name="dosya" type="file" required />
-                      <input name="cihaz" required placeholder="Cihaz" defaultValue="Lab tarayıcı A" />
+                      <input name="cihaz" required placeholder="Cihaz" defaultValue="Tarayıcı 1" />
                       <input name="operatorAd" required placeholder="Operatör" defaultValue="test-operator" />
                       <input name="sayfaSayisi" type="number" min={1} required defaultValue={1} />
                       <input name="profil" required placeholder="Profil" defaultValue="300dpi-renk-jpeg" />

@@ -86,6 +86,18 @@ export class KayitService {
     return { fonlar, birimler, konumlar };
   }
 
+  async dosyaListe(aktor?: Aktor) {
+    const where =
+      aktor?.rol === "BIRIM_SORUMLUSU" && aktor.birimId
+        ? { birimId: aktor.birimId }
+        : {};
+    return this.prisma.dosya.findMany({
+      where,
+      orderBy: { kod: "asc" },
+      include: { seri: true, birim: true, konum: true },
+    });
+  }
+
   async dosyaGetir(id: string) {
     const dosya = await this.prisma.dosya.findUnique({
       where: { id },
