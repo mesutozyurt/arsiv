@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, Req } from "@nestjs/common";
 import { Rol } from "@prisma/client";
 import type { Aktor } from "../auth/aktor";
+import { Public } from "../auth/public";
 import { Roller } from "../auth/roller.decorator";
 import {
   BekletmeDto,
@@ -12,10 +13,13 @@ import {
   ImhaOyDto,
   KarartmaDto,
   OduncDto,
+  OduncIadeDto,
+  OduncUzatDto,
   OcrDto,
   OcrOnayDto,
   PlanBaglaDto,
   RiskDto,
+  TalepCevapDto,
   TalepDto,
   YapiDto,
 } from "./yasam.dto";
@@ -59,10 +63,16 @@ export class YasamController {
     return this.yasam.oduncVer(dto.dosyaId, dto.talepEden, dto.birimAd, dto.gun ?? 7);
   }
 
+  @Post("oduncler/:id/uzat")
+  @Roller(Rol.ARSIV_MEMURU, Rol.BIRIM_SORUMLUSU)
+  uzat(@Param("id", ParseUUIDPipe) id: string, @Body() dto: OduncUzatDto) {
+    return this.yasam.oduncUzat(id, dto.gun ?? 7);
+  }
+
   @Post("oduncler/:id/iade")
   @Roller(Rol.ARSIV_MEMURU, Rol.BIRIM_SORUMLUSU)
-  iade(@Param("id", ParseUUIDPipe) id: string) {
-    return this.yasam.oduncIade(id);
+  iade(@Param("id", ParseUUIDPipe) id: string, @Body() dto: OduncIadeDto = {}) {
+    return this.yasam.oduncIade(id, dto.kondisyon);
   }
 
   @Get("ara")
@@ -195,5 +205,52 @@ export class YasamController {
   @Get("yedek")
   yedek() {
     return this.yasam.yedekRapor();
+  }
+
+  @Get("ozet")
+  ozet() {
+    return this.yasam.ozet();
+  }
+
+  @Get("yapilandirma")
+  yapilar() {
+    return this.yasam.yapilandirmalar();
+  }
+
+  @Get("ice-aktarim")
+  iceListe() {
+    return this.yasam.iceAktarimlar();
+  }
+
+  @Get("eyp")
+  eypListe() {
+    return this.yasam.eypPaketler();
+  }
+
+  @Get("ocr")
+  ocrListe() {
+    return this.yasam.ocrOneriler();
+  }
+
+  @Get("risk")
+  riskListe() {
+    return this.yasam.riskler();
+  }
+
+  @Get("entegrasyon")
+  entegrasyonListe() {
+    return this.yasam.entegrasyonlar();
+  }
+
+  @Post("talepler/:id/cevap")
+  @Roller(Rol.ARSIV_MEMURU, Rol.UST_YONETICI)
+  talepCevap(@Param("id", ParseUUIDPipe) id: string, @Body() dto: TalepCevapDto) {
+    return this.yasam.talepCevap(id, dto.durum, dto.karar);
+  }
+
+  @Public()
+  @Post("halk/talepler")
+  halkTalep(@Body() dto: TalepDto) {
+    return this.yasam.talepAc({ ...dto, dosyaId: undefined });
   }
 }

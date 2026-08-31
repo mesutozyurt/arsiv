@@ -30,6 +30,8 @@ const dosyaInclude = {
     orderBy: { createdAt: "asc" as const },
   },
   hareketler: { include: { konum: true }, orderBy: { createdAt: "desc" as const } },
+  planSurum: { include: { plan: true } },
+  bekletmeler: { where: { aktif: true }, orderBy: { createdAt: "desc" as const } },
 };
 
 function konumOzeti(konum: {

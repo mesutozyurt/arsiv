@@ -1,9 +1,10 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { IcerikRolu, KaliteSonucu } from "@prisma/client";
+import { DosyaDurumu, IcerikRolu, KaliteSonucu } from "@prisma/client";
 import { DepoService } from "../depo/depo.service";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -76,6 +77,20 @@ export class IcerikService {
   async nesneGetir(id: string) {
     const nesne = await this.prisma.nesne.findUnique({ where: { id } });
     if (!nesne) throw new NotFoundException("Nesne bulunamadı");
+    const [icerik, tarama] = await Promise.all([
+      this.prisma.belgeIcerik.findFirst({
+        where: { nesneId: id },
+        include: { belge: { include: { dosya: true } } },
+      }),
+      this.prisma.tarama.findFirst({
+        where: { nesneId: id },
+        include: { belge: { include: { dosya: true } } },
+      }),
+    ]);
+    const dosya = icerik?.belge.dosya ?? tarama?.belge.dosya;
+    if (dosya?.durum === DosyaDurumu.IMHA_EDILDI) {
+      throw new ForbiddenException("İmha edilmiş içerik yeniden üretilmez");
+    }
     const akis = await this.depo.akis(nesne.depoAnahtari);
     return { nesne, akis };
   }

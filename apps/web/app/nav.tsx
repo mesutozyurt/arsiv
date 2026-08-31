@@ -27,6 +27,12 @@ export function Nav() {
         <a href="/is" aria-current={yol === "/is" ? "page" : undefined}>
           İşlemler
         </a>
+        <a href="/yonetim" aria-current={yol === "/yonetim" ? "page" : undefined}>
+          Yönetim
+        </a>
+        <a href="/basvuru" aria-current={yol === "/basvuru" ? "page" : undefined}>
+          Vatandaş başvurusu
+        </a>
         {girisVar ? (
           <button
             className="baglanti-dugme"

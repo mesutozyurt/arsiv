@@ -73,6 +73,15 @@ type Hareket = {
   konum: Konum;
 };
 
+type PlanSurum = {
+  id: string;
+  surum: number;
+  sdpKodu: string;
+  sureYil: number;
+  dabOnayNo: string | null;
+  plan: { kod: string; ad: string };
+};
+
 type DosyaDetay = DosyaOzet & {
   ureticiBirimAd: string;
   sahipKurum: string;
@@ -81,6 +90,8 @@ type DosyaDetay = DosyaOzet & {
   birim: Birim;
   belgeler: Belge[];
   hareketler: Hareket[];
+  planSurum: PlanSurum | null;
+  bekletmeler: { id: string; sebep: string; makam: string; aktif: boolean }[];
 };
 
 function konumYazi(konum: Konum): string {
@@ -106,6 +117,9 @@ export function KayitEkrani() {
   const [detay, setDetay] = useState<DosyaDetay | null>(null);
   const [hata, setHata] = useState<string | null>(null);
   const [bilgi, setBilgi] = useState<string | null>(null);
+  const [planlar, setPlanlar] = useState<
+    { id: string; kod: string; surumler: { id: string; surum: number }[] }[]
+  >([]);
 
   const yenile = useCallback(async (dosyaId?: string) => {
     const veri = await api<{ fonlar: Fon[]; birimler: Birim[]; konumlar: Konum[] }>(
@@ -123,6 +137,9 @@ export function KayitEkrani() {
 
   useEffect(() => {
     yenile().catch((e: Error) => setHata(e.message));
+    void api<{ id: string; kod: string; surumler: { id: string; surum: number }[] }[]>("/api/v1/planlar")
+      .then(setPlanlar)
+      .catch(() => undefined);
     // İlk yükleme
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -404,6 +421,89 @@ export function KayitEkrani() {
                   </button>
                 </p>
               ) : null}
+
+              <h3>Saklama planı</h3>
+              <p className="meta">
+                {detay.planSurum
+                  ? `${detay.planSurum.plan.kod} sürüm ${detay.planSurum.surum} · ${detay.planSurum.sureYil} yıl · SDP ${detay.planSurum.sdpKodu}`
+                  : "Bağlı plan yok — imha adayı olamaz"}
+              </p>
+              {!detay.planSurum ? (
+                <form
+                  className="form-izgara"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const id = String(new FormData(e.currentTarget).get("planSurumId"));
+                    void api(`/api/v1/dosyalar/${detay.id}/plan`, {
+                      method: "POST",
+                      body: JSON.stringify({ planSurumId: id }),
+                    })
+                      .then(() => dosyaSec(detay.id))
+                      .then(() => setBilgi("Plan bağlandı; geriye dönük değiştirilemez."))
+                      .catch((err: Error) => setHata(err.message));
+                  }}
+                >
+                  <label>
+                    Plan sürümü
+                    <select name="planSurumId" required>
+                      {planlar.flatMap((p) =>
+                        p.surumler.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {p.kod} v{s.surum}
+                          </option>
+                        )),
+                      )}
+                    </select>
+                  </label>
+                  <button type="submit">Planı bağla</button>
+                </form>
+              ) : null}
+
+              <h3>Hukukî bekletme</h3>
+              <ul>
+                {detay.bekletmeler.length === 0 ? <li>Aktif bekletme yok</li> : detay.bekletmeler.map((b) => (
+                  <li key={b.id}>
+                    {b.sebep} — {b.makam}{" "}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void api(`/api/v1/bekletme/${b.id}/kaldir`, { method: "POST" })
+                          .then(() => dosyaSec(detay.id))
+                          .catch((err: Error) => setHata(err.message))
+                      }
+                    >
+                      Kaldır
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <form
+                className="form-izgara"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const f = new FormData(e.currentTarget);
+                  void api(`/api/v1/dosyalar/${detay.id}/bekletme`, {
+                    method: "POST",
+                    body: JSON.stringify({
+                      sebep: String(f.get("sebep")),
+                      makam: String(f.get("makam")),
+                    }),
+                  })
+                    .then(() => dosyaSec(detay.id))
+                    .then(() => setBilgi("Bekletme kondu; imha adayı olamaz."))
+                    .catch((err: Error) => setHata(err.message));
+                }}
+              >
+                <label>
+                  Sebep
+                  <input name="sebep" required minLength={3} />
+                </label>
+                <label>
+                  Makam
+                  <input name="makam" required minLength={2} />
+                </label>
+                <button type="submit">Bekletme koy</button>
+              </form>
 
               <h3>Konum değiştir</h3>
               <form className="form-izgara" onSubmit={(e) => void konumAta(e)}>

@@ -8,14 +8,17 @@ import {
 } from "@nestjs/common";
 import { createHash } from "node:crypto";
 import {
+  DosyaDurumu,
   IletisimDurumu,
   ImhaAsama,
+  NushaTuru,
   OduncDurumu,
   Rol,
   TalepDurumu,
   TalepTuru,
 } from "@prisma/client";
 import type { Aktor } from "../auth/aktor";
+import { isGunuEkle } from "../ortak/is-gunu";
 import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
@@ -24,6 +27,7 @@ export class YasamService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     await this.tohumYasam();
+    await this.tohumSuresiDolmus();
   }
 
   async tohumYasam(): Promise<void> {
@@ -112,15 +116,6 @@ export class YasamService implements OnModuleInit {
     });
   }
 
-  async oduncIade(id: string) {
-    const o = await this.prisma.odunc.findUnique({ where: { id } });
-    if (!o || o.durum !== OduncDurumu.ACIK) throw new NotFoundException("Açık ödünç yok");
-    return this.prisma.odunc.update({
-      where: { id },
-      data: { durum: OduncDurumu.IADE, iadeTarih: new Date() },
-    });
-  }
-
   oduncler() {
     return this.prisma.odunc.findMany({
       include: { dosya: true },
@@ -138,6 +133,8 @@ export class YasamService implements OnModuleInit {
       OR: [
         { kod: { contains: metin, mode: "insensitive" } },
         { konu: { contains: metin, mode: "insensitive" } },
+        { belgeler: { some: { konu: { contains: metin, mode: "insensitive" } } } },
+        { belgeler: { some: { ocrOneriler: { some: { metin: { contains: metin, mode: "insensitive" } } } } } },
       ],
     };
     if (aktor.rol === Rol.BIRIM_SORUMLUSU && aktor.birimId) {
@@ -164,8 +161,14 @@ export class YasamService implements OnModuleInit {
       if (d.bekletmeler.length) {
         throw new BadRequestException("Bekletmeli kayıt aday olamaz");
       }
-      if (d.durum !== "KAYITLI") {
+      if (d.durum !== DosyaDurumu.KAYITLI) {
         throw new BadRequestException("Yalnız kayıtlı dosya aday olur");
+      }
+      if (!d.planSurum) {
+        throw new BadRequestException("Plan bağlanmadan aday olamaz");
+      }
+      if (!this.suresiDoldu(d.tarihBitis ?? d.createdAt, d.planSurum.sureYil)) {
+        throw new BadRequestException("Süresi dolmamış veya aktif kayıt aday olamaz");
       }
     }
     return this.prisma.imhaListesi.create({
@@ -205,7 +208,11 @@ export class YasamService implements OnModuleInit {
 
   async imhaDab(listeId: string, dabGorusNo: string) {
     const liste = await this.listeGetir(listeId);
-    if (liste.oylar.length < 1) throw new BadRequestException("Önce komisyon oyu");
+    if (liste.oylar.length < 5) {
+      throw new BadRequestException("Beş üye oyu olmadan DAB kapısı açılmaz");
+    }
+    const kabul = liste.oylar.filter((o) => o.kabul).length;
+    if (kabul < 3) throw new BadRequestException("Komisyon çoğunluğu yok");
     return this.prisma.imhaListesi.update({
       where: { id: listeId },
       data: { asama: ImhaAsama.DAB_GORUS, dabGorusNo },
@@ -237,17 +244,26 @@ export class YasamService implements OnModuleInit {
     const kanit = {
       listeKod: liste.kod,
       dosyaKodlari: adaylar.map((a) => a.dosya.kod),
-      yontem: "lab-silme",
+      hashler: adaylar.flatMap((a) =>
+        a.dosya.belgeler.flatMap((b) => b.icerikler.map((i) => i.nesneId)),
+      ),
+      yontem: "icerik-yeniden-uretilmez",
       operator: aktor.ad,
       icerikYok: true,
     };
-    await this.prisma.imhaListesi.update({
-      where: { id: listeId },
-      data: {
-        asama: ImhaAsama.ICRA,
-        tutanakOzet: JSON.stringify(kanit),
-      },
-    });
+    await this.prisma.$transaction([
+      this.prisma.dosya.updateMany({
+        where: { id: { in: adaylar.map((a) => a.dosyaId) } },
+        data: { durum: DosyaDurumu.IMHA_EDILDI },
+      }),
+      this.prisma.imhaListesi.update({
+        where: { id: listeId },
+        data: {
+          asama: ImhaAsama.ICRA,
+          tutanakOzet: JSON.stringify(kanit),
+        },
+      }),
+    ]);
     return { ...kanit, saklamaYil: 10 };
   }
 
@@ -269,8 +285,7 @@ export class YasamService implements OnModuleInit {
       }
     }
     const gun = dto.tur === TalepTuru.BILGI_EDINME ? 15 : 30;
-    const son = new Date();
-    son.setDate(son.getDate() + gun);
+    const son = isGunuEkle(new Date(), gun);
     return this.prisma.talep.create({
       data: {
         kod: `TLP-${Date.now()}`,
@@ -459,6 +474,102 @@ export class YasamService implements OnModuleInit {
       kapsar: ["postgres", "minio", "denetim-gunlugu"],
       komut: "./scripts/yedek.sh",
     };
+  }
+
+  async ozet() {
+    const [kayitli, taslak, imha, odunc, talep] = await Promise.all([
+      this.prisma.dosya.count({ where: { durum: DosyaDurumu.KAYITLI } }),
+      this.prisma.dosya.count({ where: { durum: DosyaDurumu.TASLAK } }),
+      this.prisma.dosya.count({ where: { durum: DosyaDurumu.IMHA_EDILDI } }),
+      this.prisma.odunc.count({ where: { durum: OduncDurumu.ACIK } }),
+      this.prisma.talep.count({ where: { durum: TalepDurumu.ACIK } }),
+    ]);
+    return { kayitli, taslak, imha, odunc, talep };
+  }
+
+  yapilandirmalar() {
+    return this.prisma.yapilandirmaSurumu.findMany({ orderBy: { createdAt: "desc" } });
+  }
+
+  iceAktarimlar() {
+    return this.prisma.iceAktarim.findMany({ orderBy: { createdAt: "desc" } });
+  }
+
+  eypPaketler() {
+    return this.prisma.eypPaket.findMany({ include: { belge: true }, orderBy: { createdAt: "desc" } });
+  }
+
+  ocrOneriler() {
+    return this.prisma.ocrOneri.findMany({ include: { belge: true }, orderBy: { createdAt: "desc" } });
+  }
+
+  riskler() {
+    return this.prisma.fizikselRisk.findMany({ orderBy: { createdAt: "desc" } });
+  }
+
+  entegrasyonlar() {
+    return this.prisma.entegrasyonIletisi.findMany({ orderBy: { createdAt: "desc" } });
+  }
+
+  async talepCevap(id: string, durum: TalepDurumu, karar: string) {
+    const t = await this.prisma.talep.findUnique({ where: { id } });
+    if (!t) throw new NotFoundException("Talep yok");
+    if (durum === TalepDurumu.ACIK) throw new BadRequestException("Cevap durumu açık olamaz");
+    return this.prisma.talep.update({
+      where: { id },
+      data: { durum, karar },
+    });
+  }
+
+  async oduncUzat(id: string, gun: number) {
+    const o = await this.prisma.odunc.findUnique({ where: { id } });
+    if (!o || o.durum !== OduncDurumu.ACIK) throw new NotFoundException("Açık ödünç yok");
+    const son = new Date(o.sonTarih);
+    son.setDate(son.getDate() + gun);
+    return this.prisma.odunc.update({
+      where: { id },
+      data: { sonTarih: son, uzatmaSayisi: o.uzatmaSayisi + 1 },
+    });
+  }
+
+  async oduncIade(id: string, kondisyon?: string) {
+    const o = await this.prisma.odunc.findUnique({ where: { id } });
+    if (!o || o.durum !== OduncDurumu.ACIK) throw new NotFoundException("Açık ödünç yok");
+    return this.prisma.odunc.update({
+      where: { id },
+      data: { durum: OduncDurumu.IADE, iadeTarih: new Date(), kondisyon },
+    });
+  }
+
+  private suresiDoldu(baslangic: Date, sureYil: number): boolean {
+    const bitis = new Date(baslangic);
+    bitis.setFullYear(bitis.getFullYear() + sureYil);
+    return new Date() >= bitis;
+  }
+
+  private async tohumSuresiDolmus() {
+    if (await this.prisma.dosya.findUnique({ where: { kod: "DSY-2010-0001" } })) return;
+    const seri = await this.prisma.seri.findFirst({ where: { kod: "SERI-MK-001" } });
+    const birim = await this.prisma.birim.findFirst({ where: { kod: "YI" } });
+    const konum = await this.prisma.fizikselKonum.findFirst();
+    const plan = await this.prisma.saklamaSurumu.findFirst({ orderBy: { surum: "asc" } });
+    if (!seri || !birim || !konum || !plan) return;
+    await this.prisma.dosya.create({
+      data: {
+        kod: "DSY-2010-0001",
+        konu: "Süresi dolmuş sentetik imha adayı",
+        seriId: seri.id,
+        birimId: birim.id,
+        nushaTuru: NushaTuru.ASIL,
+        ureticiBirimAd: "Yazı İşleri Müdürlüğü",
+        sahipKurum: "Test İlçe Belediyesi",
+        durum: DosyaDurumu.KAYITLI,
+        konumId: konum.id,
+        tarihBitis: new Date("2010-01-01T00:00:00.000Z"),
+        planSurumId: plan.id,
+        baslangicOlayi: plan.baslangicOlayi,
+      },
+    });
   }
 
   private async dosyaVar(id: string) {

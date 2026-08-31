@@ -209,6 +209,22 @@ export function IsEkrani() {
                         İade al
                       </button>
                     ) : null}
+                    {o.durum === "ACIK" ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void api(`/api/v1/oduncler/${o.id}/uzat`, {
+                            method: "POST",
+                            body: JSON.stringify({ gun: 7 }),
+                          })
+                            .then(() => yenileOdunc())
+                            .then(() => setBilgi("Süre 7 gün uzatıldı."))
+                            .catch((e: Error) => setHata(e.message))
+                        }
+                      >
+                        Uzat
+                      </button>
+                    ) : null}
                   </td>
                 </tr>
               ))}

@@ -34,4 +34,19 @@ export class DenetimService {
       take: 200,
     });
   }
+
+  async dogrula() {
+    const olaylar = await this.prisma.denetimOlayi.findMany({
+      orderBy: { sira: "asc" },
+    });
+    const bozuk: number[] = [];
+    let onceki: string | null = null;
+    for (const o of olaylar) {
+      const ham = `${o.oncekiHash ?? ""}|${o.aktorId ?? ""}|${o.islem}|${o.yol}|${o.ozet}`;
+      const hash = createHash("sha256").update(ham).digest("hex");
+      if (hash !== o.hash || o.oncekiHash !== onceki) bozuk.push(o.sira);
+      onceki = o.hash;
+    }
+    return { adet: olaylar.length, bozuk, saglam: bozuk.length === 0 };
+  }
 }

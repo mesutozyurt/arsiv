@@ -1,4 +1,4 @@
-import { TalepTuru } from "@prisma/client";
+import { TalepDurumu, TalepTuru } from "@prisma/client";
 import { IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUUID, MinLength } from "class-validator";
 
 export class PlanBaglaDto {
@@ -153,4 +153,25 @@ export class OcrDto {
 export class OcrOnayDto {
   @IsBoolean()
   uygula!: boolean;
+}
+
+export class OduncUzatDto {
+  @IsOptional()
+  @IsInt()
+  gun?: number;
+}
+
+export class OduncIadeDto {
+  @IsOptional()
+  @IsString()
+  kondisyon?: string;
+}
+
+export class TalepCevapDto {
+  @IsEnum(TalepDurumu)
+  durum!: TalepDurumu;
+
+  @IsString()
+  @MinLength(2)
+  karar!: string;
 }

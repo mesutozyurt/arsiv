@@ -64,7 +64,7 @@ export default function Giris() {
           </button>
         </form>
         <p className="meta" style={{ marginTop: "1rem" }}>
-          Test: arsiv, birim, denetci, komisyon, yonetici, bilisim — şifre Lab-2026!
+          Test: arsiv, birim, denetci, komisyon…komisyon5, yonetici, bilisim — şifre Lab-2026!
         </p>
       </section>
     </main>

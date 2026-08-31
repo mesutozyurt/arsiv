@@ -12,4 +12,10 @@ export class DenetimController {
   liste() {
     return this.denetim.liste();
   }
+
+  @Get("dogrula")
+  @Roller(Rol.DENETCI, Rol.UST_YONETICI, Rol.ARSIV_MEMURU)
+  dogrula() {
+    return this.denetim.dogrula();
+  }
 }

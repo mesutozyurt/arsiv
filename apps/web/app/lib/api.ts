@@ -31,7 +31,7 @@ export async function api<T>(yol: string, init?: RequestInit): Promise<T> {
       ...(init?.headers ?? {}),
     },
   });
-  if (yanit.status === 401 && typeof window !== "undefined") {
+  if (yanit.status === 401 && typeof window !== "undefined" && !yol.startsWith("/api/v1/halk")) {
     window.location.href = "/giris";
   }
   const govde = await yanit.json().catch(() => ({}));
