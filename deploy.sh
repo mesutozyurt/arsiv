@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")"
-git fetch origin
+git fetch origin main:refs/remotes/origin/main
 git reset --hard origin/main
 docker compose --env-file .env up -d --build
 ok=0
