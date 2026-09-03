@@ -1,7 +1,7 @@
 # Anahtar teslim — kurum arşivi
 
 **Tarih:** 3 Eylül 2026  
-**Sürüm:** `main` (teslim anındaki HEAD `TESLIM-DURUM.md` içinde)  
+**Sürüm:** `main` @ `c246e0e`  
 **Ortam:** test VPS `http://194.62.55.69` — sentetik veri, gerçek kişisel veri yok
 
 ## Ne teslim edildi
