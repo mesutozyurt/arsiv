@@ -45,7 +45,14 @@ type Rapor = {
   acikTalepler: Talep[];
 };
 
-type Sekme = "ara" | "odunc" | "imha" | "talep" | "denetim" | "rapor";
+type OcrOneri = {
+  id: string;
+  metin: string;
+  onaylandi: boolean;
+  belge: { kod: string; konu: string };
+};
+
+type Sekme = "ara" | "odunc" | "imha" | "talep" | "ocr" | "denetim" | "rapor";
 
 export function IsEkrani() {
   const [ben, setBen] = useState<Aktor | null>(null);
@@ -58,6 +65,7 @@ export function IsEkrani() {
   const [imhalar, setImhalar] = useState<Imha[]>([]);
   const [talepler, setTalepler] = useState<Talep[]>([]);
   const [olaylar, setOlaylar] = useState<Olay[]>([]);
+  const [ocrler, setOcrler] = useState<OcrOneri[]>([]);
   const [rapor, setRapor] = useState<Rapor | null>(null);
 
   useEffect(() => {
@@ -82,12 +90,16 @@ export function IsEkrani() {
   async function yenileTalep() {
     setTalepler(await api<Talep[]>("/api/v1/talepler"));
   }
+  async function yenileOcr() {
+    setOcrler(await api<OcrOneri[]>("/api/v1/ocr"));
+  }
 
   useEffect(() => {
     if (!ben) return;
     if (sekme === "odunc") void yenileOdunc().catch((e: Error) => setHata(e.message));
     if (sekme === "imha") void yenileImha().catch((e: Error) => setHata(e.message));
     if (sekme === "talep") void yenileTalep().catch((e: Error) => setHata(e.message));
+    if (sekme === "ocr") void yenileOcr().catch((e: Error) => setHata(e.message));
     if (sekme === "denetim") {
       void api<Olay[]>("/api/v1/denetim").then(setOlaylar).catch((e: Error) => setHata(e.message));
     }
@@ -113,6 +125,7 @@ export function IsEkrani() {
             ["odunc", "Ödünç / iade"],
             ["imha", "Ayıklama-imha"],
             ["talep", "Suret ve başvurular"],
+            ["ocr", "OCR onay"],
             ["denetim", "Denetim günlüğü"],
             ["rapor", "Raporlar"],
           ] as const
@@ -200,7 +213,10 @@ export function IsEkrani() {
                       <button
                         type="button"
                         onClick={() =>
-                          void api(`/api/v1/oduncler/${o.id}/iade`, { method: "POST" })
+                          void api(`/api/v1/oduncler/${o.id}/iade`, {
+                            method: "POST",
+                            body: JSON.stringify({}),
+                          })
                             .then(() => yenileOdunc())
                             .then(() => setBilgi("İade alındı."))
                             .catch((e: Error) => setHata(e.message))
@@ -393,6 +409,37 @@ export function IsEkrani() {
               <li key={t.id}>
                 {t.kod} · {t.tur} · {t.durum} — {t.basvuranAd}: {t.konu} (son{" "}
                 {new Date(t.sonTarih).toLocaleDateString("tr-TR")})
+                {t.durum === "ACIK" && ben.rol === "ARSIV_MEMURU" ? (
+                  <>
+                    {" "}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void api(`/api/v1/talepler/${t.id}/cevap`, {
+                          method: "POST",
+                          body: JSON.stringify({ durum: "CEVAPLANDI", karar: "Suret hazır" }),
+                        })
+                          .then(() => yenileTalep())
+                          .catch((e: Error) => setHata(e.message))
+                      }
+                    >
+                      Cevapla
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void api(`/api/v1/talepler/${t.id}/cevap`, {
+                          method: "POST",
+                          body: JSON.stringify({ durum: "RED", karar: "Kapsam dışı" }),
+                        })
+                          .then(() => yenileTalep())
+                          .catch((e: Error) => setHata(e.message))
+                      }
+                    >
+                      Reddet
+                    </button>
+                  </>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -458,6 +505,39 @@ export function IsEkrani() {
             </label>
             <button type="submit">Kaydet</button>
           </form>
+        </section>
+      ) : null}
+
+      {sekme === "ocr" ? (
+        <section className="kart">
+          <p>Öneri belge konusunu değiştirmez; yalnız “Uygula” üst veriyi yazar.</p>
+          <ul>
+            {ocrler.length === 0 ? <li>Bekleyen öneri yok.</li> : null}
+            {ocrler.map((o) => (
+              <li key={o.id}>
+                {o.belge.kod} · {o.onaylandi ? "uygulandı" : "beklemede"} — {o.metin}
+                {!o.onaylandi && ben.rol === "ARSIV_MEMURU" ? (
+                  <>
+                    {" "}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void api(`/api/v1/ocr/${o.id}/onay`, {
+                          method: "POST",
+                          body: JSON.stringify({ uygula: true }),
+                        })
+                          .then(() => yenileOcr())
+                          .then(() => setBilgi("OCR önerisi belge konusuna yazıldı."))
+                          .catch((e: Error) => setHata(e.message))
+                      }
+                    >
+                      Uygula
+                    </button>
+                  </>
+                ) : null}
+              </li>
+            ))}
+          </ul>
         </section>
       ) : null}
 

@@ -2,7 +2,7 @@
 
 Kaynak: `02-GEREKSINIMLER.md` (FR/US), `03-MIMARI.md`.  
 Test ortamı: sentetik veri; gerçek KVKK / kişisel veri yok.  
-Durum tarihi: 31 Ağustos 2026.
+Durum tarihi: 3 Eylül 2026.
 
 Kodla kapanan çekirdek ve personel yüzü çalışır. Kurum keşfi (DAB onaylı gerçek plan, oda sayımı, gerçek EBYS ürünü) bu repoda yapılamaz.
 

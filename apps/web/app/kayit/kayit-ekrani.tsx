@@ -562,6 +562,25 @@ export function KayitEkrani() {
                       <input name="dosya" type="file" required />
                       <button type="submit">Özgün ikili bağla</button>
                     </form>
+                    <form
+                      className="form-izgara"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const metin = String(new FormData(e.currentTarget).get("metin"));
+                        void api("/api/v1/ocr", {
+                          method: "POST",
+                          body: JSON.stringify({ belgeId: b.id, metin }),
+                        })
+                          .then(() => setBilgi("OCR önerisi kaydedildi; onaysız üst veri değişmez."))
+                          .catch((err: Error) => setHata(err.message));
+                      }}
+                    >
+                      <label>
+                        OCR önerisi (onaysız yazılmaz)
+                        <input name="metin" required minLength={3} />
+                      </label>
+                      <button type="submit">Öneri kaydet</button>
+                    </form>
                     <form className="form-izgara" onSubmit={(e) => void taramaYukle(e, b.id)}>
                       <input name="dosya" type="file" required />
                       <input name="cihaz" required placeholder="Cihaz" defaultValue="Tarayıcı 1" />

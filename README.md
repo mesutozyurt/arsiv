@@ -1,23 +1,23 @@
 # Arşiv
 
-Belediye arşiv yazılımı. Geliştirme GitHub `main` üzerindedir; test sunucusu oradan çeker.
+Belediye arşiv yazılımı. Teslim notu: [TESLIM.md](./TESLIM.md).
+
+Geliştirme GitHub `main`; test sunucusu oradan çeker.
 
 ## Yerel
 
 ```bash
 cp .env.example .env
 npm install
+npm test
 npm run build
 ```
 
 ## Sunucu
 
-`/opt/lab/apps/arsiv` içinde `./deploy.sh` — `git pull` + `docker compose up`.
+`/opt/lab/apps/arsiv` içinde `bash deploy.sh`.
 
-- Web: `/`
-- Kayıt: `/kayit`
+- Web: `/` · Giriş: `/giris` · Tasnif: `/kayit` · İşlemler: `/is`
+- Yönetim: `/yonetim` · Vatandaş: `/basvuru` · Kılavuz: `/kilavuz`
 - API sağlık: `/api/v1/health`
-- Ağaç: `/api/v1/agac`
-- Nesne indir: `/api/v1/nesneler/:id`
-- Giriş: `/giris` (lab: `arsiv` / `Lab-2026!`)
-- İşlemler: `/is`
+- Doğrulama: `bash scripts/teslim-dogrula.sh`
